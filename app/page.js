@@ -148,11 +148,17 @@ export default function ArtemisLandingPage() {
   }, []);
 
   const countdownBlocks = useMemo(() => ([
-    { label: 'Days', value: String(timeRemaining.days).padStart(2, '0') },
-    { label: 'Hours', value: String(timeRemaining.hours).padStart(2, '0') },
-    { label: 'Minutes', value: String(timeRemaining.minutes).padStart(2, '0') },
-    { label: 'Seconds', value: String(timeRemaining.seconds).padStart(2, '0') },
-  ]), [timeRemaining]);
+  { label: 'Days', value: String(timeRemaining.days).padStart(2, '0') },
+  { label: 'Hours', value: String(timeRemaining.hours).padStart(2, '0') },
+  { label: 'Minutes', value: String(timeRemaining.minutes).padStart(2, '0') },
+  { label: 'Seconds', value: String(timeRemaining.seconds).padStart(2, '0') },
+]), [timeRemaining]);
+
+const goToPresale = () => {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/presale';
+  }
+};
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.45),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_35%),radial-gradient(circle_at_20%_80%,rgba(147,197,253,0.25),transparent_35%)]" />
@@ -181,15 +187,23 @@ export default function ArtemisLandingPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button className="rounded-2xl h-14 px-7 text-base font-semibold bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white shadow-[0_0_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200">
-                <Rocket className="w-4 h-4 mr-2" />
-                Board Presale Now
-              </Button>
-              <Button variant="outline" className="rounded-2xl h-14 px-7 text-base font-semibold border-blue-400/30 bg-blue-500/5 text-blue-100 hover:bg-blue-500/10">
-                <Wallet className="w-4 h-4 mr-2" />
-                Connect Wallet
-              </Button>
-            </div>
+  <Button
+    onClick={goToPresale}
+    className="rounded-2xl h-14 px-7 text-base font-semibold bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white shadow-[0_0_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200"
+  >
+    <Rocket className="w-4 h-4 mr-2" />
+    Board Presale Now
+  </Button>
+
+  <Button
+    variant="outline"
+    onClick={goToPresale}
+    className="rounded-2xl h-14 px-7 text-base font-semibold border-blue-400/30 bg-blue-500/5 text-blue-100 hover:bg-blue-500/10"
+  >
+    <Wallet className="w-4 h-4 mr-2" />
+    Connect Wallet
+  </Button>
+</div>
 
             <div className="mt-8 rounded-[2rem] border border-blue-400/20 bg-blue-500/5 backdrop-blur-xl p-5 md:p-6 max-w-2xl">
               <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -302,9 +316,12 @@ export default function ArtemisLandingPage() {
                       <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">{card.eyebrow}</div>
                       <div className="text-xl font-semibold text-blue-50 mt-2">{card.title}</div>
                       <div className="text-blue-100/65 mt-3 leading-7 text-sm">{card.text}</div>
-                      <Button className="w-full mt-5 rounded-2xl h-12 bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200">
-                        {card.button}
-                      </Button>
+                      <Button
+                      onClick={goToPresale}
+                      className="w-full mt-5 rounded-2xl h-12 bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200"
+                    >
+                      {card.button}
+                    </Button>
                     </div>
                   );
                 })}
@@ -344,10 +361,13 @@ export default function ArtemisLandingPage() {
                   </div>
                 </div>
 
-                <Button className="w-full mt-5 rounded-2xl h-14 text-base font-semibold bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white shadow-[0_0_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200">
-                  Buy $ARTM Now
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                <Button
+                onClick={goToPresale}
+                className="w-full mt-5 rounded-2xl h-14 text-base font-semibold bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white shadow-[0_0_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200"
+              >
+                Buy $ARTM Now
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
 
                 <div className="grid grid-cols-3 gap-3 mt-4 text-center">
                   {[
