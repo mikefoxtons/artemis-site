@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useSendTransaction,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+} from 'wagmi';
+import { parseEther } from 'viem';
+import { mainnet } from 'wagmi/chains';
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,6 +18,8 @@ import {
   CircleDollarSign,
   Clock3,
   Copy,
+  ExternalLink,
+  Loader2,
   Lock,
   Moon,
   Radio,
@@ -18,11 +29,13 @@ import {
 } from 'lucide-react';
 
 const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
+const TREASURY_WALLET = '0xc12ee9dC15c3Fc7FCe8Ae2Ef8eD84e92c0B72310';
+const MINIMUM_USD = 25;
 
 const acceptedAssets = [
   { symbol: 'ETH', network: 'Ethereum', priceLabel: 'Pay with native ETH' },
-  { symbol: 'USDC', network: 'Ethereum / Base', priceLabel: 'Stablecoin rail' },
-  { symbol: 'USDT', network: 'Ethereum / Base', priceLabel: 'Stablecoin rail' },
+  { symbol: 'USDC', network: 'Ethereum', priceLabel: 'Stablecoin rail' },
+  { symbol: 'USDT', network: 'Ethereum', priceLabel: 'Stablecoin rail' },
 ];
 
 const batches = [
@@ -128,7 +141,7 @@ function NumberInput({ label, value, onChange, suffix }) {
         <input
           type="number"
           min="0"
-          step="0.01"
+          step="0.0001"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full bg-transparent text-2xl font-semibold text-blue-50 outline-none"
@@ -148,10 +161,27 @@ export default function ArtemisPresalePage() {
   const [ethUsdPrice, setEthUsdPrice] = useState(null);
   const [priceLoading, setPriceLoading] = useState(true);
   const [priceError, setPriceError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   const { address, isConnected, connector, chain } = useAccount();
   const { connect, connectors, isPending, pendingConnector, error } = useConnect();
   const { disconnect } = useDisconnect();
+  const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
+
+  const {
+    data: txHash,
+    sendTransaction,
+    isPending: isSendingTransaction,
+    error: sendError,
+  } = useSendTransaction();
+
+  const {
+    isLoading: isConfirmingTransaction,
+    isSuccess: isTransactionConfirmed,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
 
   useEffect(() => {
     setIsMounted(true);
@@ -184,7 +214,7 @@ export default function ArtemisPresalePage() {
         if (active) {
           setEthUsdPrice(data.ethUsd);
         }
-      } catch (err) {
+      } catch {
         if (active) {
           setPriceError('Unable to load ETH/USD price');
         }
@@ -205,6 +235,14 @@ export default function ArtemisPresalePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedAsset !== 'ETH') {
+      setActionMessage('ETH is enabled for the MVP test. USDC and USDT will follow next.');
+    } else {
+      setActionMessage('');
+    }
+  }, [selectedAsset]);
+
   const currentBatchPrice = 0.1;
 
   const assetUsdPrice = useMemo(() => {
@@ -214,11 +252,15 @@ export default function ArtemisPresalePage() {
     return 0;
   }, [selectedAsset, ethUsdPrice]);
 
-  const estimatedUsdValue = useMemo(() => {
+  const numericPaymentAmount = useMemo(() => {
     const amount = Number(paymentAmount || 0);
-    if (!Number.isFinite(amount) || amount <= 0) return 0;
-    return amount * assetUsdPrice;
-  }, [paymentAmount, assetUsdPrice]);
+    return Number.isFinite(amount) && amount > 0 ? amount : 0;
+  }, [paymentAmount]);
+
+  const estimatedUsdValue = useMemo(() => {
+    if (numericPaymentAmount <= 0) return 0;
+    return numericPaymentAmount * assetUsdPrice;
+  }, [numericPaymentAmount, assetUsdPrice]);
 
   const estimatedTokens = useMemo(() => {
     if (estimatedUsdValue <= 0) return '0';
@@ -274,20 +316,24 @@ export default function ArtemisPresalePage() {
   }, [connectors, isMounted]);
 
   const selectedWalletName = connector ? normaliseConnectorName(connector.name) : null;
+  const isOnEthereumMainnet = chain?.id === mainnet.id;
+  const meetsMinimum = estimatedUsdValue >= MINIMUM_USD;
+  const isEthPurchase = selectedAsset === 'ETH';
+
+  const canSubmitEthTransaction =
+    isConnected &&
+    isEthPurchase &&
+    isOnEthereumMainnet &&
+    numericPaymentAmount > 0 &&
+    meetsMinimum &&
+    !isSendingTransaction &&
+    !isConfirmingTransaction &&
+    !isSwitchingChain &&
+    TREASURY_WALLET !== '0xYOUR_TREASURY_WALLET_HERE';
 
   const handleReturnToLanding = () => {
     if (typeof window !== 'undefined') {
       window.location.href = '/';
-    }
-  };
-
-  const handleLaunchSequence = () => {
-    if (typeof window !== 'undefined') {
-      window.alert(
-        `Launch sequence initiated for ${estimatedTokens} ARTM using ${selectedAsset} from ${formatAddress(
-          address
-        )}.`
-      );
     }
   };
 
@@ -302,6 +348,57 @@ export default function ArtemisPresalePage() {
       // no-op
     }
   };
+
+  const handleSwitchToEthereum = () => {
+    switchChain({ chainId: mainnet.id });
+  };
+
+  const handleLaunchSequence = () => {
+    if (!isConnected) {
+      setActionMessage('Connect your wallet before entering the launch sequence.');
+      return;
+    }
+
+    if (!isEthPurchase) {
+      setActionMessage('ETH is enabled for the MVP test. USDC and USDT will follow next.');
+      return;
+    }
+
+    if (!isOnEthereumMainnet) {
+      setActionMessage('Switch to Ethereum mainnet before continuing.');
+      return;
+    }
+
+    if (numericPaymentAmount <= 0) {
+      setActionMessage('Enter a valid contribution amount.');
+      return;
+    }
+
+    if (!meetsMinimum) {
+      setActionMessage('Minimum boarding is $250 equivalent.');
+      return;
+    }
+
+    if (TREASURY_WALLET === '0xYOUR_TREASURY_WALLET_HERE') {
+      setActionMessage('Add your treasury wallet address before testing transactions.');
+      return;
+    }
+
+    try {
+      setActionMessage('');
+      sendTransaction({
+        to: TREASURY_WALLET,
+        value: parseEther(paymentAmount),
+        chainId: mainnet.id,
+      });
+    } catch {
+      setActionMessage('Unable to prepare the ETH transaction.');
+    }
+  };
+
+  const etherscanUrl = txHash
+    ? `https://etherscan.io/tx/${txHash}`
+    : null;
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
@@ -537,7 +634,7 @@ export default function ArtemisPresalePage() {
                       <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
                         Supported networks
                       </div>
-                      <div className="text-blue-50 font-medium mt-3">Ethereum / Base</div>
+                      <div className="text-blue-50 font-medium mt-3">Ethereum</div>
                     </div>
                     <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4">
                       <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
@@ -582,6 +679,32 @@ export default function ArtemisPresalePage() {
                       </div>
                     </div>
                   </div>
+
+                  {!isOnEthereumMainnet && (
+                    <div className="rounded-3xl border border-amber-300/20 bg-amber-400/10 p-4">
+                      <div className="text-amber-100 font-medium">
+                        Ethereum mainnet required
+                      </div>
+                      <div className="text-sm text-amber-100/70 mt-1">
+                        Switch your wallet to Ethereum mainnet before continuing.
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="rounded-2xl h-11 font-medium mt-4"
+                        onClick={handleSwitchToEthereum}
+                        disabled={isSwitchingChain}
+                      >
+                        {isSwitchingChain ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Switching...
+                          </>
+                        ) : (
+                          'Switch to Ethereum'
+                        )}
+                      </Button>
+                    </div>
+                  )}
 
                   <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -663,7 +786,13 @@ export default function ArtemisPresalePage() {
                             ) : priceError ? (
                               priceError
                             ) : (
-                              <>1 ETH = ${ethUsdPrice?.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD</>
+                              <>
+                                1 ETH = $
+                                {ethUsdPrice?.toLocaleString(undefined, {
+                                  maximumFractionDigits: 2,
+                                })}{' '}
+                                USD
+                              </>
                             )
                           ) : (
                             <>1 {selectedAsset} = $1.00 USD</>
@@ -677,14 +806,84 @@ export default function ArtemisPresalePage() {
                           })}
                         </div>
                       </div>
+
+                      <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
+                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                          Destination wallet
+                        </div>
+                        <div className="mt-3 text-sm text-blue-100/70">
+                          {formatAddress(TREASURY_WALLET)}
+                        </div>
+                      </div>
+
+                      {actionMessage && (
+                        <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
+                          {actionMessage}
+                        </div>
+                      )}
+
+                      {sendError && (
+                        <div className="rounded-2xl border border-red-300/20 bg-red-400/10 p-4 text-sm text-red-100/80">
+                          {sendError.message}
+                        </div>
+                      )}
+
+                      {receiptError && (
+                        <div className="rounded-2xl border border-red-300/20 bg-red-400/10 p-4 text-sm text-red-100/80">
+                          {receiptError.message}
+                        </div>
+                      )}
+
+                      {txHash && (
+                        <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+                          <div className="text-sm text-cyan-100/90">
+                            Transaction submitted
+                          </div>
+                          <div className="text-xs text-cyan-100/70 mt-2 break-all">
+                            {txHash}
+                          </div>
+                          {etherscanUrl && (
+                            <a
+                              href={etherscanUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-sm text-cyan-100 mt-3 hover:underline"
+                            >
+                              View on Etherscan
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {isTransactionConfirmed && (
+                        <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm text-emerald-100/85">
+                          ETH payment confirmed on Ethereum mainnet.
+                        </div>
+                      )}
                     </div>
 
                     <Button
                       className="w-full mt-5 rounded-2xl h-14 text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.35)]"
                       onClick={handleLaunchSequence}
+                      disabled={!canSubmitEthTransaction}
                     >
-                      <Rocket className="w-4 h-4 mr-2" />
-                      Enter Launch Sequence
+                      {isSendingTransaction ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Opening wallet...
+                        </>
+                      ) : isConfirmingTransaction ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Confirming transaction...
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="w-4 h-4 mr-2" />
+                          Enter Launch Sequence
+                        </>
+                      )}
                     </Button>
 
                     <div className="grid grid-cols-2 gap-3 mt-4">
