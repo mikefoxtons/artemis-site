@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
   CircleDollarSign,
   Clock3,
+  Copy,
   Lock,
   Moon,
   Radio,
@@ -16,12 +18,6 @@ import {
 } from 'lucide-react';
 
 const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
-
-const supportedWallets = [
-  'MetaMask',
-  'Coinbase Wallet',
-  'WalletConnect',
-];
 
 const acceptedAssets = [
   { symbol: 'ETH', network: 'Ethereum', priceLabel: 'Pay with native ETH' },
@@ -59,6 +55,35 @@ function getTimeRemaining(targetDate) {
     seconds: Math.floor((difference / 1000) % 60),
     complete: false,
   };
+}
+
+function formatAddress(address) {
+  if (!address) return '';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function normaliseConnectorName(name = '') {
+  const lower = name.toLowerCase();
+
+  if (lower.includes('meta')) return 'MetaMask';
+  if (lower.includes('coinbase')) return 'Coinbase Wallet';
+  if (lower.includes('walletconnect')) return 'WalletConnect';
+
+  return name;
+}
+
+function sortConnectors(connectors) {
+  const order = {
+    MetaMask: 1,
+    'Coinbase Wallet': 2,
+    WalletConnect: 3,
+  };
+
+  return [...connectors].sort((a, b) => {
+    const aName = normaliseConnectorName(a.name);
+    const bName = normaliseConnectorName(b.name);
+    return (order[aName] || 999) - (order[bName] || 999);
+  });
 }
 
 function Button({ className = '', variant = 'default', children, type = 'button', ...props }) {
@@ -116,11 +141,17 @@ function NumberInput({ label, value, onChange, suffix }) {
 
 export default function ArtemisPresalePage() {
   const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(PRESALE_END_DATE));
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [selectedWallet, setSelectedWallet] = useState('MetaMask');
   const [selectedAsset, setSelectedAsset] = useState('ETH');
   const [paymentAmount, setPaymentAmount] = useState('250');
   const [isMounted, setIsMounted] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [ethUsdPrice, setEthUsdPrice] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(true);
+  const [priceError, setPriceError] = useState('');
+
+  const { address, isConnected, connector, chain } = useAccount();
+  const { connect, connectors, isPending, pendingConnector, error } = useConnect();
+  const { disconnect } = useDisconnect();
 
   useEffect(() => {
     setIsMounted(true);
@@ -132,15 +163,70 @@ export default function ArtemisPresalePage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    const fetchEthPrice = async () => {
+      try {
+        setPriceLoading(true);
+        setPriceError('');
+
+        const response = await fetch('/api/eth-price', {
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load ETH price');
+        }
+
+        const data = await response.json();
+
+        if (active) {
+          setEthUsdPrice(data.ethUsd);
+        }
+      } catch (err) {
+        if (active) {
+          setPriceError('Unable to load ETH/USD price');
+        }
+      } finally {
+        if (active) {
+          setPriceLoading(false);
+        }
+      }
+    };
+
+    fetchEthPrice();
+
+    const interval = setInterval(fetchEthPrice, 30000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const currentBatchPrice = 0.1;
 
-  const estimatedTokens = useMemo(() => {
+  const assetUsdPrice = useMemo(() => {
+    if (selectedAsset === 'ETH') return ethUsdPrice ?? 0;
+    if (selectedAsset === 'USDC') return 1;
+    if (selectedAsset === 'USDT') return 1;
+    return 0;
+  }, [selectedAsset, ethUsdPrice]);
+
+  const estimatedUsdValue = useMemo(() => {
     const amount = Number(paymentAmount || 0);
-    if (!Number.isFinite(amount) || amount <= 0) return '0';
-    return (amount / currentBatchPrice).toLocaleString(undefined, {
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    return amount * assetUsdPrice;
+  }, [paymentAmount, assetUsdPrice]);
+
+  const estimatedTokens = useMemo(() => {
+    if (estimatedUsdValue <= 0) return '0';
+
+    return (estimatedUsdValue / currentBatchPrice).toLocaleString(undefined, {
       maximumFractionDigits: 0,
     });
-  }, [paymentAmount]);
+  }, [estimatedUsdValue]);
 
   const countdownBlocks = useMemo(
     () => [
@@ -164,6 +250,31 @@ export default function ArtemisPresalePage() {
     [timeRemaining, isMounted]
   );
 
+  const supportedConnectors = useMemo(() => {
+    if (!isMounted) return [];
+
+    const filtered = connectors.filter((item) => {
+      const name = normaliseConnectorName(item.name);
+      return ['MetaMask', 'Coinbase Wallet', 'WalletConnect'].includes(name);
+    });
+
+    const unique = filtered.filter((connectorItem, index, array) => {
+      return (
+        index ===
+        array.findIndex(
+          (item) =>
+            item.id === connectorItem.id ||
+            normaliseConnectorName(item.name) ===
+              normaliseConnectorName(connectorItem.name)
+        )
+      );
+    });
+
+    return sortConnectors(unique);
+  }, [connectors, isMounted]);
+
+  const selectedWalletName = connector ? normaliseConnectorName(connector.name) : null;
+
   const handleReturnToLanding = () => {
     if (typeof window !== 'undefined') {
       window.location.href = '/';
@@ -173,8 +284,22 @@ export default function ArtemisPresalePage() {
   const handleLaunchSequence = () => {
     if (typeof window !== 'undefined') {
       window.alert(
-        `Launch sequence initiated for ${estimatedTokens} ARTM using ${selectedAsset}.`
+        `Launch sequence initiated for ${estimatedTokens} ARTM using ${selectedAsset} from ${formatAddress(
+          address
+        )}.`
       );
+    }
+  };
+
+  const handleCopyAddress = async () => {
+    if (!address || typeof window === 'undefined' || !navigator?.clipboard) return;
+
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // no-op
     }
   };
 
@@ -326,21 +451,21 @@ export default function ArtemisPresalePage() {
                     Boarding gate
                   </div>
                   <div className="text-3xl font-semibold text-blue-50 mt-2">
-                    {walletConnected ? 'Crew confirmed' : 'Connect wallet'}
+                    {isConnected ? 'Crew confirmed' : 'Connect wallet'}
                   </div>
                 </div>
                 <div
                   className={`rounded-2xl px-3 py-2 text-xs border ${
-                    walletConnected
+                    isConnected
                       ? 'border-emerald-300/20 bg-emerald-400/10 text-emerald-200'
                       : 'border-blue-400/20 bg-blue-500/5 text-blue-100/75'
                   }`}
                 >
-                  {walletConnected ? 'Wallet live' : 'Awaiting connection'}
+                  {isConnected ? 'Wallet live' : 'Awaiting connection'}
                 </div>
               </div>
 
-              {!walletConnected ? (
+              {!isConnected ? (
                 <div className="mt-6">
                   <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
                     <div className="text-sm text-blue-100/70 leading-7">
@@ -350,30 +475,60 @@ export default function ArtemisPresalePage() {
                     </div>
 
                     <div className="space-y-3 mt-5">
-                      {supportedWallets.map((wallet) => (
-                        <button
-                          type="button"
-                          key={wallet}
-                          onClick={() => {
-                            setSelectedWallet(wallet);
-                            setWalletConnected(true);
-                          }}
-                          className="w-full rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 flex items-center justify-between text-left hover:bg-blue-500/10 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-2xl border border-blue-400/20 bg-blue-400/10 flex items-center justify-center">
-                              <Wallet className="w-5 h-5 text-blue-200" />
+                      {!isMounted ? (
+                        <div className="rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 text-sm text-blue-100/60">
+                          Detecting available wallets...
+                        </div>
+                      ) : (
+                        <>
+                          {supportedConnectors.map((walletConnector) => {
+                            const walletName = normaliseConnectorName(walletConnector.name);
+                            const isThisPending =
+                              isPending && pendingConnector?.id === walletConnector.id;
+
+                            return (
+                              <button
+                                type="button"
+                                key={`${walletConnector.id}-${walletName}`}
+                                onClick={() => connect({ connector: walletConnector })}
+                                disabled={isPending}
+                                className="w-full rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 flex items-center justify-between text-left hover:bg-blue-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-11 h-11 rounded-2xl border border-blue-400/20 bg-blue-400/10 flex items-center justify-center">
+                                    <Wallet className="w-5 h-5 text-blue-200" />
+                                  </div>
+                                  <div>
+                                    <div className="text-blue-50 font-medium">
+                                      {walletName}
+                                    </div>
+                                    <div className="text-sm text-blue-100/55 mt-1">
+                                      {isThisPending
+                                        ? 'Opening wallet...'
+                                        : 'Secure wallet connection'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-blue-200" />
+                              </button>
+                            );
+                          })}
+
+                          {supportedConnectors.length === 0 && (
+                            <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
+                              No supported wallet connectors were found. Check that
+                              MetaMask, Coinbase Wallet, or WalletConnect are configured
+                              in your wagmi setup.
                             </div>
-                            <div>
-                              <div className="text-blue-50 font-medium">{wallet}</div>
-                              <div className="text-sm text-blue-100/55 mt-1">
-                                Secure wallet connection
-                              </div>
+                          )}
+
+                          {error && (
+                            <div className="rounded-2xl border border-red-300/20 bg-red-400/10 p-4 text-sm text-red-100/80">
+                              {error.message}
                             </div>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-blue-200" />
-                        </button>
-                      ))}
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -396,13 +551,34 @@ export default function ArtemisPresalePage() {
                 <div className="mt-6 space-y-4">
                   <div className="rounded-3xl border border-emerald-300/20 bg-emerald-400/10 p-4 flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-200 mt-0.5" />
-                    <div>
+                    <div className="w-full">
                       <div className="text-emerald-100 font-medium">
-                        {selectedWallet} connected successfully
+                        {selectedWalletName || 'Wallet'} connected successfully
                       </div>
                       <div className="text-sm text-emerald-100/70 mt-1">
                         You are cleared for boarding. Continue below to finalize your
                         allocation.
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <div className="rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80">
+                          {formatAddress(address)}
+                        </div>
+
+                        {chain?.name && (
+                          <div className="rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80">
+                            {chain.name}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleCopyAddress}
+                          className="inline-flex items-center gap-1 rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80 hover:bg-black/30"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          {copied ? 'Copied' : 'Copy'}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -474,6 +650,33 @@ export default function ArtemisPresalePage() {
                           <div className="text-sm text-blue-100/55">at $0.10 per coin</div>
                         </div>
                       </div>
+
+                      <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
+                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                          Conversion reference
+                        </div>
+
+                        <div className="mt-3 text-sm text-blue-100/70">
+                          {selectedAsset === 'ETH' ? (
+                            priceLoading ? (
+                              'Loading ETH/USD price...'
+                            ) : priceError ? (
+                              priceError
+                            ) : (
+                              <>1 ETH = ${ethUsdPrice?.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD</>
+                            )
+                          ) : (
+                            <>1 {selectedAsset} = $1.00 USD</>
+                          )}
+                        </div>
+
+                        <div className="mt-2 text-sm text-blue-100/55">
+                          Estimated USD contribution: $
+                          {estimatedUsdValue.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}
+                        </div>
+                      </div>
                     </div>
 
                     <Button
@@ -488,7 +691,7 @@ export default function ArtemisPresalePage() {
                       <Button
                         variant="outline"
                         className="rounded-2xl h-12 font-medium"
-                        onClick={() => setWalletConnected(false)}
+                        onClick={disconnect}
                       >
                         <Wallet className="w-4 h-4 mr-2" />
                         Change Wallet
@@ -496,7 +699,7 @@ export default function ArtemisPresalePage() {
                       <Button
                         variant="outline"
                         className="rounded-2xl h-12 font-medium"
-                        onClick={() => setWalletConnected(false)}
+                        onClick={disconnect}
                       >
                         Disconnect
                       </Button>
