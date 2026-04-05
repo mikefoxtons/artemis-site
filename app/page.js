@@ -138,21 +138,24 @@ function Progress({ value = 0, className = '' }) {
 
 export default function ArtemisLandingPage() {
   const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(PRESALE_END_DATE));
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeRemaining(getTimeRemaining(PRESALE_END_DATE));
-    }, 1000);
+  setIsMounted(true);
 
-    return () => clearInterval(interval);
-  }, []);
+  const interval = setInterval(() => {
+    setTimeRemaining(getTimeRemaining(PRESALE_END_DATE));
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, []);
 
   const countdownBlocks = useMemo(() => ([
-  { label: 'Days', value: String(timeRemaining.days).padStart(2, '0') },
-  { label: 'Hours', value: String(timeRemaining.hours).padStart(2, '0') },
-  { label: 'Minutes', value: String(timeRemaining.minutes).padStart(2, '0') },
-  { label: 'Seconds', value: String(timeRemaining.seconds).padStart(2, '0') },
-]), [timeRemaining]);
+  { label: 'Days', value: isMounted ? String(timeRemaining.days).padStart(2, '0') : '--' },
+  { label: 'Hours', value: isMounted ? String(timeRemaining.hours).padStart(2, '0') : '--' },
+  { label: 'Minutes', value: isMounted ? String(timeRemaining.minutes).padStart(2, '0') : '--' },
+  { label: 'Seconds', value: isMounted ? String(timeRemaining.seconds).padStart(2, '0') : '--' },
+]), [timeRemaining, isMounted]);
 
 const goToPresale = () => {
   if (typeof window !== 'undefined') {
@@ -212,8 +215,8 @@ const goToPresale = () => {
                   <div className="text-2xl md:text-3xl font-semibold text-blue-50 mt-2">Presale ends 31 March 2027</div>
                 </div>
                 <div className="rounded-full border border-blue-400/20 bg-black/30 px-4 py-2 text-sm text-blue-100/75">
-                  {timeRemaining.complete ? 'Presale complete' : 'Final boarding in progress'}
-                </div>
+                {!isMounted ? 'Syncing telemetry' : timeRemaining.complete ? 'Presale complete' : 'Final boarding in progress'}
+              </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
