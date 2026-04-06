@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, Wallet, Zap, ArrowRight, Satellite } from 'lucide-react';
+import { Rocket, Wallet, Zap, ArrowRight, Satellite, ShieldCheck, Lock, TrendingDown } from 'lucide-react';
 
 const missionTimeline = [
   {
@@ -82,12 +82,12 @@ function getTimeRemaining(targetDate) {
 
 function Button({ className = '', variant = 'default', children, ...props }) {
   const base =
-    'inline-flex items-center justify-center transition-all duration-200 disabled:pointer-events-none disabled:opacity-50';
+    'inline-flex items-center justify-center transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 rounded-2xl font-semibold border backdrop-blur-md active:scale-95';
   const variants = {
     default:
-      'bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200',
+      'bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white border-blue-300/30 shadow-[0_10px_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200 hover:shadow-[0_0_40px_rgba(56,189,248,0.45)]',
     outline:
-      'border border-blue-400/30 bg-blue-500/5 text-blue-100 hover:bg-blue-500/10',
+      'border border-blue-400/40 bg-blue-500/10 text-blue-100 shadow-inner hover:bg-blue-500/20 hover:border-blue-300/60'
   };
 
   return (
@@ -474,7 +474,7 @@ export default function ArtemisLandingPage() {
           <div className="grid md:grid-cols-2 gap-6 mt-8">
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
               <div className="text-xl font-semibold text-blue-50">Raise Target</div>
-              <div className="text-4xl font-bold mt-2 text-cyan-300">$10,000,000</div>
+              <div className="text-4xl font-bold mt-2 text-cyan-300">~$3,125,000</div>
               <div className="text-blue-100/60 mt-3">
                 Structured to build momentum ahead of a major exchange launch aligned with Artemis III.
               </div>
@@ -504,43 +504,63 @@ export default function ArtemisLandingPage() {
               {[
                 {
                   label: 'Batch 1',
-                  price: '$0.10',
-                  supply: '1.5M ARTM',
+                  price: '$0.25',
+                  supply: '500k ARTM',
                   remaining: '90% remaining',
-                  progress: 90,
+                  progress: 10,
                   badge: 'Current Batch',
                   highlight: true,
-                  kicker: 'Best entry point',
+                  kicker: 'Limited early access',
                 },
                 {
                   label: 'Batch 2',
-                  price: '$0.25',
-                  supply: '1.5M ARTM',
-                  remaining: 'Next price +150%',
+                  price: '$0.40',
+                  supply: '750k ARTM',
+                  remaining: '+60% from Batch 1',
                   progress: 0,
                   badge: 'Next Up',
                   highlight: false,
-                  kicker: 'Price step increase',
+                  kicker: 'Early momentum',
                 },
                 {
                   label: 'Batch 3',
-                  price: '$0.50',
-                  supply: '1.0M ARTM',
-                  remaining: 'Mid-mission tranche',
+                  price: '$0.55',
+                  supply: '1M ARTM',
+                  remaining: 'Mid-mission pricing',
                   progress: 0,
                   badge: '',
                   highlight: false,
-                  kicker: 'Reduced supply',
+                  kicker: 'Strong positioning',
                 },
                 {
-                  label: 'Final Batch',
-                  price: '$0.75',
-                  supply: '1.0M ARTM',
-                  remaining: 'Final boarding',
+                  label: 'Batch 4',
+                  price: '$0.70',
+                  supply: '1M ARTM',
+                  remaining: 'Momentum phase',
                   progress: 0,
                   badge: '',
                   highlight: false,
-                  kicker: 'Last presale price',
+                  kicker: 'Approaching launch',
+                },
+                {
+                  label: 'Batch 5',
+                  price: '$0.80',
+                  supply: '1.25M ARTM',
+                  remaining: 'Pre-launch pricing',
+                  progress: 0,
+                  badge: '',
+                  highlight: false,
+                  kicker: 'Main accumulation phase',
+                },
+                {
+                  label: 'Final Boarding',
+                  price: '$0.90',
+                  supply: '500k ARTM',
+                  remaining: 'Last allocation before launch',
+                  progress: 0,
+                  badge: '',
+                  highlight: false,
+                  kicker: 'Exchange-level pricing',
                 },
               ].map((batch) => (
                 <div
@@ -616,6 +636,38 @@ export default function ArtemisLandingPage() {
           <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Tokenomics</div>
           <h2 className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">Mission supply structure</h2>
 
+          <div className="grid sm:grid-cols-3 gap-4 mt-6">
+            <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-400/10 border border-emerald-300/20 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-emerald-300" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Liquidity</div>
+                <div className="text-blue-50 font-semibold">Locked</div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-cyan-400/10 border border-cyan-300/20 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-cyan-300" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Supply</div>
+                <div className="text-blue-50 font-semibold">No Inflation</div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-400/10 border border-purple-300/20 flex items-center justify-center">
+                <TrendingDown className="w-5 h-5 text-purple-300" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Team</div>
+                <div className="text-blue-50 font-semibold">Fully Vested</div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6 mt-8">
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
               <div className="text-xl font-semibold text-blue-50">Total Supply</div>
@@ -631,10 +683,9 @@ export default function ArtemisLandingPage() {
                 {[
                   ['Presale', '50%'],
                   ['Liquidity', '20%'],
-                  ['Marketing', '10%'],
-                  ['Ecosystem / Rewards', '10%'],
+                  ['Growth Fund', '15%'],
+                  ['Treasury', '10%'],
                   ['Team (Vested)', '5%'],
-                  ['Reserve / Treasury', '5%'],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between">
                     <div className="text-blue-100/70">{label}</div>
@@ -650,7 +701,7 @@ export default function ArtemisLandingPage() {
               <div className="text-blue-200/45 text-xs uppercase">Liquidity</div>
               <div className="text-blue-50 font-semibold mt-2">Locked</div>
               <div className="text-blue-100/60 mt-2 text-sm">
-                Liquidity is locked post-launch to support trust and stability in the initial trading phase.
+                100% of liquidity is locked at launch to ensure trust and stability during the initial trading phase.
               </div>
             </div>
 
@@ -658,7 +709,7 @@ export default function ArtemisLandingPage() {
               <div className="text-blue-200/45 text-xs uppercase">Team Tokens</div>
               <div className="text-blue-50 font-semibold mt-2">Vested</div>
               <div className="text-blue-100/60 mt-2 text-sm">
-                Team allocation follows a vesting schedule aligned with long-term project execution.
+                Team allocation subject to a 12 month cliff and 12 month vesting schedule.
               </div>
             </div>
 
@@ -666,7 +717,7 @@ export default function ArtemisLandingPage() {
               <div className="text-blue-200/45 text-xs uppercase">Treasury</div>
               <div className="text-blue-50 font-semibold mt-2">Mission Fund</div>
               <div className="text-blue-100/60 mt-2 text-sm">
-                Reserved for listings, partnerships and ecosystem expansion after launch.
+                Strategic reserve used for listings, partnerships and long-term mission execution.
               </div>
             </div>
           </div>
