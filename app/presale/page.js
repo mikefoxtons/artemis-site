@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 
 const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
-const TREASURY_WALLET = '0xYOUR_TREASURY_WALLET_HERE';
+const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET;
 const MINIMUM_USD = 25;
 
 const acceptedAssets = [
