@@ -62,7 +62,7 @@ const fadeUp = {
 
 const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
 
-function getTimeRemaining(targetDate: string) {
+function getTimeRemaining(targetDate) {
   const now = new Date().getTime();
   const target = new Date(targetDate).getTime();
   const difference = target - now;
@@ -80,12 +80,7 @@ function getTimeRemaining(targetDate: string) {
   };
 }
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  className?: string;
-  variant?: 'default' | 'outline';
-};
-
-function Button({ className = '', variant = 'default', children, ...props }: ButtonProps) {
+function Button({ className = '', variant = 'default', children, ...props }) {
   const base =
     'inline-flex items-center justify-center transition-all duration-200 disabled:pointer-events-none disabled:opacity-50';
   const variants = {
@@ -102,7 +97,7 @@ function Button({ className = '', variant = 'default', children, ...props }: But
   );
 }
 
-function Progress({ value = 0, className = '' }: { value?: number; className?: string }) {
+function Progress({ value = 0, className = '' }) {
   const safeValue = Math.max(0, Math.min(100, value));
   return (
     <div className={`relative h-2 w-full overflow-hidden rounded-full ${className}`}>
