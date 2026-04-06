@@ -26,10 +26,11 @@ import {
   Rocket,
   ShieldCheck,
   Wallet,
+  X,
 } from 'lucide-react';
 
 const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
-const TREASURY_WALLET = '0xc12ee9dC15c3Fc7FCe8Ae2Ef8eD84e92c0B72310';
+const TREASURY_WALLET = '0xYOUR_TREASURY_WALLET_HERE';
 const MINIMUM_USD = 25;
 
 const acceptedAssets = [
@@ -47,7 +48,7 @@ const batches = [
 
 const missionChecks = [
   'Crew manifest open',
-  'Minimum allocation $25',
+  'Minimum allocation $250',
   'Accepted assets: ETH, USDC, USDT',
   'Listing target aligned to Artemis III',
 ];
@@ -97,6 +98,13 @@ function sortConnectors(connectors) {
     const bName = normaliseConnectorName(b.name);
     return (order[aName] || 999) - (order[bName] || 999);
   });
+}
+
+function getWalletDescription(walletName) {
+  if (walletName === 'MetaMask') return 'Browser extension or mobile app';
+  if (walletName === 'WalletConnect') return 'Use mobile or external wallet';
+  if (walletName === 'Coinbase Wallet') return 'Browser extension or mobile app';
+  return 'Secure wallet connection';
 }
 
 function Button({ className = '', variant = 'default', children, type = 'button', ...props }) {
@@ -162,6 +170,7 @@ export default function ArtemisPresalePage() {
   const [priceLoading, setPriceLoading] = useState(true);
   const [priceError, setPriceError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
+  const [connectingWallet, setConnectingWallet] = useState(null);
 
   const { address, isConnected, connector, chain } = useAccount();
   const { connect, connectors, isPending, pendingConnector, error } = useConnect();
@@ -242,6 +251,18 @@ export default function ArtemisPresalePage() {
       setActionMessage('');
     }
   }, [selectedAsset]);
+
+  useEffect(() => {
+    if (isConnected) {
+      setConnectingWallet(null);
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (error) {
+      setConnectingWallet(null);
+    }
+  }, [error]);
 
   const currentBatchPrice = 0.1;
 
@@ -353,6 +374,16 @@ export default function ArtemisPresalePage() {
     switchChain({ chainId: mainnet.id });
   };
 
+  const handleWalletConnect = (walletConnector) => {
+    const walletName = normaliseConnectorName(walletConnector.name);
+    setConnectingWallet(walletName);
+    connect({ connector: walletConnector });
+  };
+
+  const handleCancelWalletConnection = () => {
+    setConnectingWallet(null);
+  };
+
   const handleLaunchSequence = () => {
     if (!isConnected) {
       setActionMessage('Connect your wallet before entering the launch sequence.');
@@ -375,7 +406,7 @@ export default function ArtemisPresalePage() {
     }
 
     if (!meetsMinimum) {
-      setActionMessage('Minimum boarding is $25 equivalent.');
+      setActionMessage(`Minimum boarding is $${MINIMUM_USD} equivalent.`);
       return;
     }
 
@@ -396,9 +427,7 @@ export default function ArtemisPresalePage() {
     }
   };
 
-  const etherscanUrl = txHash
-    ? `https://etherscan.io/tx/${txHash}`
-    : null;
+  const etherscanUrl = txHash ? `https://etherscan.io/tx/${txHash}` : null;
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
@@ -576,19 +605,54 @@ export default function ArtemisPresalePage() {
                         <div className="rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 text-sm text-blue-100/60">
                           Detecting available wallets...
                         </div>
+                      ) : connectingWallet ? (
+                        <div className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5">
+                          <div className="flex items-start gap-3">
+                            <div className="w-11 h-11 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 flex items-center justify-center">
+                              <Loader2 className="w-5 h-5 text-cyan-200 animate-spin" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-blue-50 font-medium">
+                                Connecting to {connectingWallet}
+                              </div>
+                              <div className="text-sm text-blue-100/65 mt-2 leading-7">
+                                Check your wallet to continue. On desktop, look for your
+                                browser extension popup. On mobile, your wallet app may
+                                open automatically.
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 mt-5">
+                            <Button
+                              variant="outline"
+                              className="rounded-2xl h-12 font-medium"
+                              onClick={handleCancelWalletConnection}
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="rounded-2xl h-12 font-medium"
+                              onClick={handleCancelWalletConnection}
+                            >
+                              <Wallet className="w-4 h-4 mr-2" />
+                              Choose Another
+                            </Button>
+                          </div>
+                        </div>
                       ) : (
                         <>
                           {supportedConnectors.map((walletConnector) => {
                             const walletName = normaliseConnectorName(walletConnector.name);
-                            const isThisPending =
-                              isPending && pendingConnector?.id === walletConnector.id;
 
                             return (
                               <button
                                 type="button"
                                 key={`${walletConnector.id}-${walletName}`}
-                                onClick={() => connect({ connector: walletConnector })}
-                                disabled={isPending}
+                                onClick={() => handleWalletConnect(walletConnector)}
+                                disabled={Boolean(connectingWallet)}
                                 className="w-full rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 flex items-center justify-between text-left hover:bg-blue-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                               >
                                 <div className="flex items-center gap-3">
@@ -600,9 +664,7 @@ export default function ArtemisPresalePage() {
                                       {walletName}
                                     </div>
                                     <div className="text-sm text-blue-100/55 mt-1">
-                                      {isThisPending
-                                        ? 'Opening wallet...'
-                                        : 'Secure wallet connection'}
+                                      {getWalletDescription(walletName)}
                                     </div>
                                   </div>
                                 </div>
@@ -618,6 +680,11 @@ export default function ArtemisPresalePage() {
                               in your wagmi setup.
                             </div>
                           )}
+
+                          <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4 text-sm text-blue-100/60">
+                            On desktop, approve the connection in your wallet extension.
+                            On mobile, your wallet app may open automatically.
+                          </div>
 
                           {error && (
                             <div className="rounded-2xl border border-red-300/20 bg-red-400/10 p-4 text-sm text-red-100/80">
