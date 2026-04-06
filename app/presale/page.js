@@ -16,16 +16,12 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  CircleDollarSign,
-  Clock3,
   Copy,
   ExternalLink,
   Loader2,
   Lock,
-  Moon,
-  Radio,
-  Rocket,
   ShieldCheck,
+  TrendingDown,
   Wallet,
   X,
 } from 'lucide-react';
@@ -49,47 +45,14 @@ import {
   isUserRejectedError,
 } from '@/lib/web3/errors';
 
-const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET;
-
+const CURRENT_BATCH_PRICE = 0.25;
 
 const acceptedAssets = [
-  { symbol: 'ETH', network: 'Ethereum', priceLabel: 'Pay with native ETH' },
-  { symbol: 'USDC', network: 'Ethereum', priceLabel: 'Stablecoin rail' },
-  { symbol: 'USDT', network: 'Ethereum', priceLabel: 'Stablecoin rail' },
+  { symbol: 'ETH', network: 'Ethereum' },
+  { symbol: 'USDC', network: 'Ethereum' },
+  { symbol: 'USDT', network: 'Ethereum' },
 ];
-
-const batches = [
-  { batch: 'Batch 1', price: '$0.10', status: 'Live now', progress: 72 },
-  { batch: 'Batch 2', price: '$0.25', status: 'Locked', progress: 0 },
-  { batch: 'Batch 3', price: '$0.50', status: 'Locked', progress: 0 },
-  { batch: 'Final Batch', price: '$0.75', status: 'Locked', progress: 0 },
-];
-
-const missionChecks = [
-  'Crew manifest open',
-  'Minimum allocation $25',
-  'Accepted assets: ETH, USDC, USDT',
-  'Listing target aligned to Artemis III',
-];
-
-function getTimeRemaining(targetDate) {
-  const now = new Date().getTime();
-  const target = new Date(targetDate).getTime();
-  const difference = target - now;
-
-  if (difference <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, complete: true };
-  }
-
-  return {
-    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((difference / (1000 * 60)) % 60),
-    seconds: Math.floor((difference / 1000) % 60),
-    complete: false,
-  };
-}
 
 function formatAddress(address) {
   if (!address) return '';
@@ -118,39 +81,50 @@ function Button({ className = '', variant = 'default', children, type = 'button'
   );
 }
 
-function Progress({ value = 0, className = '' }) {
-  const safeValue = Math.max(0, Math.min(100, value));
-  return (
-    <div className={`relative h-2 w-full overflow-hidden rounded-full ${className}`}>
-      <div
-        className="h-full rounded-full bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300"
-        style={{ width: `${safeValue}%` }}
-      />
-    </div>
-  );
-}
-
 function NumberInput({ label, value, onChange, suffix }) {
   return (
-    <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
-      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">{label}</div>
-      <div className="flex items-center justify-between gap-3 mt-3">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="text-[11px] uppercase tracking-[0.24em] text-blue-200/45">{label}</div>
+      <div className="mt-3 flex items-center justify-between gap-3">
         <input
           type="number"
           min="0"
           step="0.0001"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-transparent text-2xl font-semibold text-blue-50 outline-none"
+          className="w-full bg-transparent text-3xl font-semibold text-white outline-none"
+          placeholder="0"
         />
-        <div className="text-sm text-blue-100/60 whitespace-nowrap">{suffix}</div>
+        <div className="whitespace-nowrap text-sm text-blue-100/60">{suffix}</div>
       </div>
     </div>
   );
 }
 
+function Divider() {
+  return <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />;
+}
+
+function validateAmount(amountValue) {
+  const amount = Number(amountValue || 0);
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+}
+
+function calculateEstimatedUsdValue(amountValue, asset, ethUsdPrice) {
+  const amount = validateAmount(amountValue);
+  if (amount <= 0) return 0;
+  if (asset === 'ETH') return amount * ethUsdPrice;
+  return amount;
+}
+
+function calculateEstimatedTokens(usdValue) {
+  if (usdValue <= 0) return '0';
+  return (usdValue / CURRENT_BATCH_PRICE).toLocaleString(undefined, {
+    maximumFractionDigits: 0,
+  });
+}
+
 export default function ArtemisPresalePage() {
-  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(PRESALE_END_DATE));
   const [selectedAsset, setSelectedAsset] = useState('ETH');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [isMounted, setIsMounted] = useState(false);
@@ -194,12 +168,6 @@ export default function ArtemisPresalePage() {
 
   useEffect(() => {
     setIsMounted(true);
-
-    const interval = setInterval(() => {
-      setTimeRemaining(getTimeRemaining(PRESALE_END_DATE));
-    }, 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -251,86 +219,84 @@ export default function ArtemisPresalePage() {
   }, [isConnected]);
 
   useEffect(() => {
-  if (!connectError) return;
+    if (!connectError) return;
 
-  const message = connectError?.message?.toLowerCase?.() || '';
+    const message = connectError?.message?.toLowerCase?.() || '';
 
-  setConnectingWallet(null);
-  setWalletNotice(mapWalletErrorToNotice(connectError));
+    setConnectingWallet(null);
+    setWalletNotice(mapWalletErrorToNotice(connectError));
 
-  if (
-    !message.includes('user rejected') &&
-    !message.includes('user denied') &&
-    !message.includes('rejected') &&
-    !message.includes('declined')
-  ) {
-    console.error(connectError);
-  }
-}, [connectError]);
+    if (
+      !message.includes('user rejected') &&
+      !message.includes('user denied') &&
+      !message.includes('rejected') &&
+      !message.includes('declined')
+    ) {
+      console.error(connectError);
+    }
+  }, [connectError]);
 
+  useEffect(() => {
+    if (!walletNotice) return;
 
- useEffect(() => {
-  if (!walletNotice) return;
+    const timeout = window.setTimeout(() => {
+      setWalletNotice(null);
+    }, 5000);
 
-  const timeout = window.setTimeout(() => {
-    setWalletNotice(null);
-  }, 5000);
+    return () => window.clearTimeout(timeout);
+  }, [walletNotice]);
 
-  return () => window.clearTimeout(timeout);
-}, [walletNotice]);
+  useEffect(() => {
+    if (!sendError) return;
 
-useEffect(() => {
-  if (!sendError) return;
+    setTransactionNotice(mapTransactionErrorToNotice(sendError));
 
-  setTransactionNotice(mapTransactionErrorToNotice(sendError));
+    if (!isUserRejectedError(sendError)) {
+      console.error(sendError);
+    }
+  }, [sendError]);
 
-  if (!isUserRejectedError(sendError)) {
-    console.error(sendError);
-  }
-}, [sendError]);
+  useEffect(() => {
+    if (!writeError) return;
 
-useEffect(() => {
-  if (!writeError) return;
+    setTransactionNotice(mapTransactionErrorToNotice(writeError));
 
-  setTransactionNotice(mapTransactionErrorToNotice(writeError));
+    if (!isUserRejectedError(writeError)) {
+      console.error(writeError);
+    }
+  }, [writeError]);
 
-  if (!isUserRejectedError(writeError)) {
-    console.error(writeError);
-  }
-}, [writeError]);
+  useEffect(() => {
+    if (!receiptError) return;
 
-useEffect(() => {
-  if (!receiptError) return;
+    setTransactionNotice(mapTransactionErrorToNotice(receiptError));
 
-  setTransactionNotice(mapTransactionErrorToNotice(receiptError));
+    if (!isUserRejectedError(receiptError)) {
+      console.error(receiptError);
+    }
+  }, [receiptError]);
 
-  if (!isUserRejectedError(receiptError)) {
-    console.error(receiptError);
-  }
-}, [receiptError]);
-useEffect(() => {
-  if (!transactionNotice) return;
+  useEffect(() => {
+    if (!transactionNotice) return;
 
-  const timeout = window.setTimeout(() => {
-    setTransactionNotice(null);
-  }, 5000);
+    const timeout = window.setTimeout(() => {
+      setTransactionNotice(null);
+    }, 5000);
 
-  return () => window.clearTimeout(timeout);
-}, [transactionNotice]);
+    return () => window.clearTimeout(timeout);
+  }, [transactionNotice]);
 
-useEffect(() => {
-  if (selectedAsset === 'USDC' || selectedAsset === 'USDT') {
-    setPaymentAmount(String(MINIMUM_USD));
-    return;
-  }
+  useEffect(() => {
+    if (selectedAsset === 'USDC' || selectedAsset === 'USDT') {
+      setPaymentAmount(String(MINIMUM_USD));
+      return;
+    }
 
-  if (selectedAsset === 'ETH' && ethUsdPrice && ethUsdPrice > 0) {
-    const ethAmount = (MINIMUM_USD / ethUsdPrice).toFixed(6);
-    setPaymentAmount(ethAmount);
-  }
-}, [selectedAsset, ethUsdPrice]);
-
-  const currentBatchPrice = 0.1;
+    if (selectedAsset === 'ETH' && ethUsdPrice && ethUsdPrice > 0) {
+      const ethAmount = (MINIMUM_USD / ethUsdPrice).toFixed(6);
+      setPaymentAmount(ethAmount);
+    }
+  }, [selectedAsset, ethUsdPrice]);
 
   const assetUsdPrice = useMemo(() => {
     if (selectedAsset === 'ETH') return ethUsdPrice ?? 0;
@@ -339,44 +305,16 @@ useEffect(() => {
     return 0;
   }, [selectedAsset, ethUsdPrice]);
 
-  const numericPaymentAmount = useMemo(() => {
-    const amount = Number(paymentAmount || 0);
-    return Number.isFinite(amount) && amount > 0 ? amount : 0;
-  }, [paymentAmount]);
+  const numericPaymentAmount = useMemo(() => validateAmount(paymentAmount), [paymentAmount]);
 
-  const estimatedUsdValue = useMemo(() => {
-    if (numericPaymentAmount <= 0) return 0;
-    return numericPaymentAmount * assetUsdPrice;
-  }, [numericPaymentAmount, assetUsdPrice]);
+  const estimatedUsdValue = useMemo(
+    () => calculateEstimatedUsdValue(paymentAmount, selectedAsset, assetUsdPrice),
+    [paymentAmount, selectedAsset, assetUsdPrice]
+  );
 
-  const estimatedTokens = useMemo(() => {
-    if (estimatedUsdValue <= 0) return '0';
-
-    return (estimatedUsdValue / currentBatchPrice).toLocaleString(undefined, {
-      maximumFractionDigits: 0,
-    });
-  }, [estimatedUsdValue]);
-
-  const countdownBlocks = useMemo(
-    () => [
-      {
-        label: 'Days',
-        value: isMounted ? String(timeRemaining.days).padStart(2, '0') : '--',
-      },
-      {
-        label: 'Hours',
-        value: isMounted ? String(timeRemaining.hours).padStart(2, '0') : '--',
-      },
-      {
-        label: 'Minutes',
-        value: isMounted ? String(timeRemaining.minutes).padStart(2, '0') : '--',
-      },
-      {
-        label: 'Seconds',
-        value: isMounted ? String(timeRemaining.seconds).padStart(2, '0') : '--',
-      },
-    ],
-    [timeRemaining, isMounted]
+  const estimatedTokens = useMemo(
+    () => calculateEstimatedTokens(estimatedUsdValue),
+    [estimatedUsdValue]
   );
 
   const supportedConnectors = useMemo(() => {
@@ -384,7 +322,7 @@ useEffect(() => {
 
     const filtered = connectors.filter((item) => {
       const name = normaliseConnectorName(item.name);
-      return ['MetaMask', 'Coinbase Wallet', 'WalletConnect'].includes(name);
+      return ['MetaMask', 'WalletConnect'].includes(name);
     });
 
     const unique = filtered.filter((connectorItem, index, array) => {
@@ -393,8 +331,7 @@ useEffect(() => {
         array.findIndex(
           (item) =>
             item.id === connectorItem.id ||
-            normaliseConnectorName(item.name) ===
-              normaliseConnectorName(connectorItem.name)
+            normaliseConnectorName(item.name) === normaliseConnectorName(connectorItem.name)
         )
       );
     });
@@ -431,6 +368,8 @@ useEffect(() => {
     !isSwitchingChain &&
     !!TREASURY_WALLET;
 
+  const etherscanUrl = activeTxHash ? `https://etherscan.io/tx/${activeTxHash}` : null;
+
   const handleReturnToLanding = () => {
     if (typeof window !== 'undefined') {
       window.location.href = '/';
@@ -453,21 +392,21 @@ useEffect(() => {
     switchChain({ chainId: mainnet.id });
   };
 
-const handleWalletConnect = (walletConnector) => {
-  const walletName = normaliseConnectorName(walletConnector.name);
-  setWalletNotice(null);
-  setConnectingWallet(walletName);
-  connect({ connector: walletConnector });
-};
+  const handleWalletConnect = (walletConnector) => {
+    const walletName = normaliseConnectorName(walletConnector.name);
+    setWalletNotice(null);
+    setConnectingWallet(walletName);
+    connect({ connector: walletConnector });
+  };
 
-const handleCancelWalletConnection = () => {
-  setConnectingWallet(null);
-  setWalletNotice(null);
-};
+  const handleCancelWalletConnection = () => {
+    setConnectingWallet(null);
+    setWalletNotice(null);
+  };
 
   const handleLaunchSequence = () => {
     if (!isConnected) {
-      setActionMessage('Connect your wallet before entering the launch sequence.');
+      setActionMessage('Connect your wallet before continuing.');
       return;
     }
 
@@ -482,7 +421,7 @@ const handleCancelWalletConnection = () => {
     }
 
     if (!meetsMinimum) {
-      setActionMessage(`Minimum boarding is $${MINIMUM_USD} equivalent.`);
+      setActionMessage(`Minimum purchase is $${MINIMUM_USD} equivalent.`);
       return;
     }
 
@@ -492,10 +431,10 @@ const handleCancelWalletConnection = () => {
     }
 
     try {
-    setActionMessage('');
-    setTransactionNotice(null);
+      setActionMessage('');
+      setTransactionNotice(null);
 
-    if (isEthPurchase) {
+      if (isEthPurchase) {
         sendTransaction({
           to: TREASURY_WALLET,
           value: parseEther(paymentAmount),
@@ -521,682 +460,378 @@ const handleCancelWalletConnection = () => {
     }
   };
 
-  const etherscanUrl = activeTxHash ? `https://etherscan.io/tx/${activeTxHash}` : null;
-
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.45),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_35%),radial-gradient(circle_at_20%_80%,rgba(147,197,253,0.25),transparent_35%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#030712] text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.28),transparent_38%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_20%_80%,rgba(56,189,248,0.12),transparent_28%)]" />
       <div
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-20"
         style={{
           backgroundImage: 'radial-gradient(white 0.7px, transparent 0.7px)',
           backgroundSize: '28px 28px',
         }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-6">
-        <header className="flex items-center justify-between gap-4 rounded-3xl border border-blue-400/20 bg-blue-500/5 backdrop-blur-xl px-5 py-4">
-          <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-blue-200/60">
-              Artemis Presale Portal
+      <div className="relative z-10 mx-auto max-w-4xl px-6 py-6 md:py-10">
+        <header className="mb-8 flex items-center justify-between gap-4 px-0 py-2">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+              <span className="text-xl">🚀</span>
             </div>
-            <div className="text-xl font-semibold text-blue-50 mt-1">
-              Mission Control / Boarding Gate
+
+            <div className="leading-tight">
+              <div className="text-xl font-semibold tracking-[0.2em] text-white">
+                ARTEMIS
+              </div>
+              <div className="text-xs tracking-[0.35em] text-blue-300/60">
+                LUNAR MEMECOIN MISSION
+              </div>
             </div>
           </div>
+
           <button
             type="button"
             onClick={handleReturnToLanding}
-            className="inline-flex items-center justify-center rounded-2xl h-12 px-5 border border-blue-400/20 text-blue-100 hover:bg-blue-500/10 transition-all duration-200"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/10 px-4 text-sm text-blue-100 transition-all duration-200 hover:bg-white/5"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Return to Landing Page
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Mission Control
           </button>
         </header>
 
-        <section className="grid xl:grid-cols-[1.08fr_0.92fr] gap-8 items-start pt-12 pb-10">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm text-blue-200 mb-5">
-              <Radio className="w-4 h-4" />
-              Crew boarding channel open
-            </div>
-
-            <h1 className="text-5xl md:text-7xl font-semibold leading-[0.95] tracking-tight">
-              Board the mission.
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-blue-400 to-sky-300">
-                Secure your lunar allocation.
-              </span>
+        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-[0_0_80px_rgba(37,99,235,0.08)] backdrop-blur-xl md:p-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+              Secure your $ARTM allocation
             </h1>
-
-            <p className="mt-6 text-lg text-blue-100/70 max-w-2xl leading-8">
-              This is the dedicated presale portal for Artemis. Connect your wallet,
-              confirm your allocation, and enter the launch sequence before the crew
-              manifest closes on 31 March 2027.
-            </p>
-
-            <div className="grid sm:grid-cols-2 gap-4 mt-8 max-w-3xl">
-              {[
-                ['Current batch', 'Batch 1 / $0.10'],
-                ['Launch objective', 'Tier 1 exchange'],
-                ['Primary catalyst', 'Artemis III'],
-                ['Raise target', '$10,000,000'],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5"
-                >
-                  <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                    {label}
-                  </div>
-                  <div className="text-2xl font-semibold text-blue-50 mt-3">{value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 backdrop-blur-xl p-6 mt-8 max-w-4xl">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-blue-200/45">
-                    Final boarding countdown
-                  </div>
-                  <div className="text-2xl md:text-3xl font-semibold text-blue-50 mt-2">
-                    Presale ends 31 March 2027
-                  </div>
-                </div>
-                <div className="rounded-full border border-blue-400/20 bg-black/30 px-4 py-2 text-sm text-blue-100/75">
-                  {!isMounted
-                    ? 'Syncing telemetry'
-                    : timeRemaining.complete
-                    ? 'Boarding closed'
-                    : 'Manifest still open'}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                {countdownBlocks.map((block) => (
-                  <div
-                    key={block.label}
-                    className="rounded-3xl border border-blue-400/20 bg-black/35 p-4 text-center"
-                  >
-                    <div className="text-3xl md:text-4xl font-semibold text-blue-50">
-                      {block.value}
-                    </div>
-                    <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45 mt-2">
-                      {block.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-cyan-300/25 bg-gradient-to-br from-blue-500/15 via-sky-400/10 to-cyan-300/15 p-6 md:p-8 mt-8 max-w-4xl">
-              <div className="text-sm uppercase tracking-[0.35em] text-cyan-200/55">
-                Mission briefing
-              </div>
-              <div className="text-3xl font-semibold mt-2 text-blue-50">
-                What happens next
-              </div>
-              <div className="grid md:grid-cols-3 gap-4 mt-6">
-                {[
-                  [
-                    '1. Connect wallet',
-                    'Authenticate entry to the boarding gate and confirm you are on a supported network.',
-                  ],
-                  [
-                    '2. Confirm allocation',
-                    'Choose your asset, enter your contribution, and review the ARTM received at the live batch price.',
-                  ],
-                  [
-                    '3. Enter launch sequence',
-                    'Submit the transaction on-chain and secure your position ahead of Artemis III.',
-                  ],
-                ].map(([title, text]) => (
-                  <div
-                    key={title}
-                    className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5"
-                  >
-                    <div className="text-lg font-semibold text-blue-50">{title}</div>
-                    <div className="text-sm leading-7 text-blue-100/65 mt-3">{text}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <div className="mt-4 text-xl font-medium text-cyan-300 md:text-2xl">Batch 1 — $0.25</div>
+            <p className="mt-2 text-sm text-blue-100/60 md:text-base">Price increases as batches fill</p>
           </div>
 
-          <div>
-            <div className="rounded-[2rem] border border-blue-400/20 bg-black/35 backdrop-blur-xl p-6 md:p-8 sticky top-6">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                    Boarding gate
-                  </div>
-                  <div className="text-3xl font-semibold text-blue-50 mt-2">
-                    {isConnected ? 'Crew confirmed' : 'Connect wallet'}
-                  </div>
-                </div>
-                <div
-                  className={`rounded-2xl px-3 py-2 text-xs border ${
-                    isConnected
-                      ? 'border-emerald-300/20 bg-emerald-400/10 text-emerald-200'
-                      : 'border-blue-400/20 bg-blue-500/5 text-blue-100/75'
-                  }`}
-                >
-                  {isConnected ? 'Wallet live' : 'Awaiting connection'}
-                </div>
-              </div>
+          <div className="mx-auto mt-8 max-w-2xl">
+            <Divider />
+          </div>
 
-              {!isConnected ? (
-                <div className="mt-6">
-                  <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
-                    <div className="text-sm text-blue-100/70 leading-7">
-                      Connect your wallet to unlock the presale console. Once connected,
-                      you will be able to choose your asset, review your estimated ARTM
-                      allocation, and submit your transaction.
-                    </div>
-
-                    <div className="space-y-3 mt-5">
-                      {!isMounted ? (
-                        <div className="rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 text-sm text-blue-100/60">
-                          Detecting available wallets...
-                        </div>
-                      ) : connectingWallet ? (
-                        <div className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5">
-                          <div className="flex items-start gap-3">
-                            <div className="w-11 h-11 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 flex items-center justify-center">
-                              <Loader2 className="w-5 h-5 text-cyan-200 animate-spin" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-blue-50 font-medium">
-                                Connecting to {connectingWallet}
-                              </div>
-                              <div className="text-sm text-blue-100/65 mt-2 leading-7">
-                                Check your wallet to continue. On desktop, look for your
-                                browser extension popup. On mobile, your wallet app may
-                                open automatically.
-                              </div>
+          <div className="mx-auto mt-8 max-w-2xl">
+            {!isConnected ? (
+              <div className="space-y-4">
+                <div className="rounded-[1.75rem] border border-white/10 bg-black/20 p-5">
+                  <div className="space-y-3">
+                    {!isMounted ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-blue-100/60">
+                        Detecting available wallets...
+                      </div>
+                    ) : connectingWallet ? (
+                      <div className="rounded-3xl border border-cyan-300/20 bg-white/[0.03] p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10">
+                            <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-white">Connecting to {connectingWallet}</div>
+                            <div className="mt-2 text-sm leading-7 text-blue-100/65">
+                              Check your wallet to continue.
                             </div>
                           </div>
-
-                          <div className="grid grid-cols-2 gap-3 mt-5">
-                            <Button
-                              variant="outline"
-                              className="rounded-2xl h-12 font-medium"
-                              onClick={handleCancelWalletConnection}
-                            >
-                              <X className="w-4 h-4 mr-2" />
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="rounded-2xl h-12 font-medium"
-                              onClick={handleCancelWalletConnection}
-                            >
-                              <Wallet className="w-4 h-4 mr-2" />
-                              Choose Another
-                            </Button>
-                          </div>
                         </div>
-                      ) : (
-                        <>
-                          {supportedConnectors.map((walletConnector) => {
-                            const walletName = normaliseConnectorName(walletConnector.name);
 
-                            return (
-                              <button
-                                type="button"
-                                key={`${walletConnector.id}-${walletName}`}
-                                onClick={() => handleWalletConnect(walletConnector)}
-                                disabled={Boolean(connectingWallet)}
-                                className="w-full rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 flex items-center justify-between text-left hover:bg-blue-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-11 h-11 rounded-2xl border border-blue-400/20 bg-blue-400/10 flex items-center justify-center">
-                                    <Wallet className="w-5 h-5 text-blue-200" />
-                                  </div>
-                                  <div>
-                                    <div className="text-blue-50 font-medium">
-                                      {walletName}
-                                    </div>
-                                    <div className="text-sm text-blue-100/55 mt-1">
-                                      {getWalletDescription(walletName)}
-                                    </div>
+                        <div className="mt-5 grid grid-cols-2 gap-3">
+                          <Button
+                            variant="outline"
+                            className="h-12 rounded-2xl font-medium"
+                            onClick={handleCancelWalletConnection}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="h-12 rounded-2xl font-medium"
+                            onClick={handleCancelWalletConnection}
+                          >
+                            <Wallet className="mr-2 h-4 w-4" />
+                            Choose Another
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {supportedConnectors.map((walletConnector) => {
+                          const walletName = normaliseConnectorName(walletConnector.name);
+
+                          return (
+                            <button
+                              type="button"
+                              key={`${walletConnector.id}-${walletName}`}
+                              onClick={() => handleWalletConnect(walletConnector)}
+                              disabled={Boolean(connectingWallet)}
+                              className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-left transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-cyan-300/10">
+                                  <Wallet className="h-5 w-5 text-cyan-200" />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-white">{walletName}</div>
+                                  <div className="mt-1 text-sm text-blue-100/55">
+                                    {getWalletDescription(walletName)}
                                   </div>
                                 </div>
-                                <ArrowRight className="w-4 h-4 text-blue-200" />
-                              </button>
-                            );
-                          })}
+                              </div>
+                              <ArrowRight className="h-4 w-4 text-blue-200" />
+                            </button>
+                          );
+                        })}
 
-                          {supportedConnectors.length === 0 && (
-                            <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
-                              No supported wallet connectors were found. Check that
-                              MetaMask, Coinbase Wallet, or WalletConnect are configured
-                              in your wagmi setup.
-                            </div>
-                          )}
-
-                          <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4 text-sm text-blue-100/60">
-                            On desktop, approve the connection in your wallet extension.
-                            On mobile, your wallet app may open automatically.
+                        {supportedConnectors.length === 0 && (
+                          <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
+                            No supported wallet connectors were found. Check that MetaMask and WalletConnect are configured in your wagmi setup.
                           </div>
+                        )}
 
-                          {walletNotice && (
-                            <div
-                              className={`rounded-2xl p-4 text-sm min-h-[56px] flex items-center ${
-                                walletNotice.type === 'warning'
-                                  ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
-                                  : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
-                              }`}
-                            >
-                              <span className="line-clamp-2">{walletNotice.message}</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+                        {walletNotice && (
+                          <div
+                            className={`min-h-[56px] rounded-2xl p-4 text-sm flex items-center ${
+                              walletNotice.type === 'warning'
+                                ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
+                                : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
+                            }`}
+                          >
+                            <span className="line-clamp-2">{walletNotice.message}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
-
-                  <div className="grid sm:grid-cols-2 gap-4 mt-5">
-                    <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4">
-                      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                        Supported networks
-                      </div>
-                      <div className="text-blue-50 font-medium mt-3">Ethereum</div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-3xl border border-emerald-300/20 bg-emerald-400/10 p-4 flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-200" />
+                  <div className="w-full">
+                    <div className="font-medium text-emerald-100">
+                      {selectedWalletName || 'Wallet'} connected
                     </div>
-                    <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4">
-                      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                        Accepted assets
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80">
+                        {formatAddress(address)}
                       </div>
-                      <div className="text-blue-50 font-medium mt-3">ETH / USDC / USDT</div>
+
+                      {chain?.name && (
+                        <div className="rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80">
+                          {chain.name}
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleCopyAddress}
+                        className="inline-flex items-center gap-1 rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80 hover:bg-black/30"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        {copied ? 'Copied' : 'Copy'}
+                      </button>
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-3xl border border-emerald-300/20 bg-emerald-400/10 p-4 flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-200 mt-0.5" />
-                    <div className="w-full">
-                      <div className="text-emerald-100 font-medium">
-                        {selectedWalletName || 'Wallet'} connected successfully
-                      </div>
-                      <div className="text-sm text-emerald-100/70 mt-1">
-                        You are cleared for boarding. Continue below to finalize your
-                        allocation.
-                      </div>
 
-                      <div className="flex flex-wrap items-center gap-2 mt-3">
-                        <div className="rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80">
-                          {formatAddress(address)}
-                        </div>
+                {!isOnEthereumMainnet && (
+                  <div className="rounded-3xl border border-amber-300/20 bg-amber-400/10 p-4">
+                    <div className="font-medium text-amber-100">Ethereum mainnet required</div>
+                    <div className="mt-1 text-sm text-amber-100/70">
+                      Switch your wallet to Ethereum mainnet before continuing.
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="mt-4 h-11 rounded-2xl font-medium"
+                      onClick={handleSwitchToEthereum}
+                      disabled={isSwitchingChain}
+                    >
+                      {isSwitchingChain ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Switching...
+                        </>
+                      ) : (
+                        'Switch to Ethereum'
+                      )}
+                    </Button>
+                  </div>
+                )}
 
-                        {chain?.name && (
-                          <div className="rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80">
-                            {chain.name}
-                          </div>
-                        )}
-
+                <div className="rounded-[1.75rem] border border-white/10 bg-black/20 p-5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {acceptedAssets.map((asset) => {
+                      const active = selectedAsset === asset.symbol;
+                      return (
                         <button
                           type="button"
-                          onClick={handleCopyAddress}
-                          className="inline-flex items-center gap-1 rounded-full border border-emerald-300/20 bg-black/20 px-3 py-1 text-xs text-emerald-100/80 hover:bg-black/30"
+                          key={asset.symbol}
+                          onClick={() => setSelectedAsset(asset.symbol)}
+                          className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
+                            active
+                              ? 'border-cyan-300/30 bg-cyan-300/10'
+                              : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
+                          }`}
                         >
-                          <Copy className="w-3.5 h-3.5" />
-                          {copied ? 'Copied' : 'Copy'}
+                          <div className="font-semibold text-white">{asset.symbol}</div>
+                          <div className="mt-1 text-sm text-blue-100/55">{asset.network}</div>
                         </button>
-                      </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4">
+                    <NumberInput
+                      label="Amount"
+                      value={paymentAmount}
+                      onChange={setPaymentAmount}
+                      suffix={selectedAsset}
+                    />
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-blue-200/45">You receive</div>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div className="text-3xl font-semibold text-white">{estimatedTokens} ARTM</div>
+                      <div className="text-sm text-blue-100/55">at $0.25</div>
+                    </div>
+                    <div className="mt-2 text-sm text-blue-100/55">
+                      {selectedAsset === 'ETH' ? (
+                        priceLoading ? (
+                          'Loading ETH/USD price...'
+                        ) : priceError ? (
+                          priceError
+                        ) : (
+                          <>
+                            1 ETH = ${ethUsdPrice?.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </>
+                        )
+                      ) : (
+                        <>1 {selectedAsset} = $1.00</>
+                      )}
+                    </div>
+                    <div className="mt-1 text-sm text-blue-100/55">
+                      Estimated contribution: $
+                      {estimatedUsdValue.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                    <div className="mt-1 text-sm text-blue-100/45">
+                      Destination: {TREASURY_WALLET ? formatAddress(TREASURY_WALLET) : 'Not configured'}
                     </div>
                   </div>
 
-                  {!isOnEthereumMainnet && (
-                    <div className="rounded-3xl border border-amber-300/20 bg-amber-400/10 p-4">
-                      <div className="text-amber-100 font-medium">
-                        Ethereum mainnet required
-                      </div>
-                      <div className="text-sm text-amber-100/70 mt-1">
-                        Switch your wallet to Ethereum mainnet before continuing.
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl h-11 font-medium mt-4"
-                        onClick={handleSwitchToEthereum}
-                        disabled={isSwitchingChain}
-                      >
-                        {isSwitchingChain ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Switching...
-                          </>
-                        ) : (
-                          'Switch to Ethereum'
-                        )}
-                      </Button>
+                  {actionMessage && (
+                    <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
+                      {actionMessage}
                     </div>
                   )}
 
-                  <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                          Live batch
-                        </div>
-                        <div className="text-2xl font-semibold text-blue-50 mt-2">
-                          Batch 1 / $0.10
-                        </div>
-                      </div>
-                      <div className="rounded-full border border-blue-400/20 bg-black/30 px-4 py-2 text-sm text-blue-100/75">
-                        Minimum boarding: $25
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 mt-5">
-                      <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
-                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                          Choose payment asset
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-                          {acceptedAssets.map((asset) => {
-                            const active = selectedAsset === asset.symbol;
-                            return (
-                              <button
-                                type="button"
-                                key={asset.symbol}
-                                onClick={() => setSelectedAsset(asset.symbol)}
-                                className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
-                                  active
-                                    ? 'border-cyan-300/30 bg-cyan-300/10'
-                                    : 'border-blue-400/20 bg-black/25 hover:bg-blue-500/10'
-                                }`}
-                              >
-                                <div className="text-blue-50 font-semibold">
-                                  {asset.symbol}
-                                </div>
-                                <div className="text-sm text-blue-100/55 mt-1">
-                                  {asset.network}
-                                </div>
-                                <div className="text-xs text-blue-200/45 mt-3">
-                                  {asset.priceLabel}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <NumberInput
-                        label="Contribution amount"
-                        value={paymentAmount}
-                        onChange={setPaymentAmount}
-                        suffix={selectedAsset}
-                      />
-
-                      <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
-                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                          Estimated ARTM received
-                        </div>
-                        <div className="flex items-center justify-between gap-3 mt-3">
-                          <div className="text-3xl font-semibold text-blue-50">
-                            {estimatedTokens}
-                          </div>
-                          <div className="text-sm text-blue-100/55">at $0.10 per coin</div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
-                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                          Conversion reference
-                        </div>
-
-                        <div className="mt-3 text-sm text-blue-100/70">
-                          {selectedAsset === 'ETH' ? (
-                            priceLoading ? (
-                              'Loading ETH/USD price...'
-                            ) : priceError ? (
-                              priceError
-                            ) : (
-                              <>
-                                1 ETH = $
-                                {ethUsdPrice?.toLocaleString(undefined, {
-                                  maximumFractionDigits: 2,
-                                })}{' '}
-                                USD
-                              </>
-                            )
-                          ) : (
-                            <>1 {selectedAsset} = $1.00 USD</>
-                          )}
-                        </div>
-
-                        <div className="mt-2 text-sm text-blue-100/55">
-                          Estimated USD contribution: $
-                          {estimatedUsdValue.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-blue-400/20 bg-black/30 p-4">
-                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
-                          Destination wallet
-                        </div>
-                        <div className="mt-3 text-sm text-blue-100/70">
-                          {TREASURY_WALLET ? formatAddress(TREASURY_WALLET) : 'Not configured'}
-                        </div>
-                      </div>
-
-                      {actionMessage && (
-                        <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
-                          {actionMessage}
-                        </div>
-                      )}
-                      {transactionNotice && (
-                        <div
-                          className={`rounded-2xl p-4 text-sm min-h-[56px] flex items-center ${
-                            transactionNotice.type === 'warning'
-                              ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
-                              : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
-                          }`}
-                        >
-                          <span className="line-clamp-2">{transactionNotice.message}</span>
-                        </div>
-                      )}
-                      {activeTxHash && (
-                        <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
-                          <div className="text-sm text-cyan-100/90">
-                            Transaction submitted
-                          </div>
-                          <div className="text-xs text-cyan-100/70 mt-2 break-all">
-                            {activeTxHash}
-                          </div>
-                          {etherscanUrl && (
-                            <a
-                              href={etherscanUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-sm text-cyan-100 mt-3 hover:underline"
-                            >
-                              View on Etherscan
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      )}
-
-                      {isTransactionConfirmed && (
-                        <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm text-emerald-100/85">
-                          Payment confirmed on Ethereum mainnet.
-                        </div>
-                      )}
-                    </div>
-
-                    <Button
-                      className="w-full mt-5 rounded-2xl h-14 text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.35)]"
-                      onClick={handleLaunchSequence}
-                      disabled={!canSubmitTransaction}
-                    >
-                      {isSendingTransaction ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Opening wallet...
-                        </>
-                      ) : isWritingContract ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Opening wallet...
-                        </>
-                      ) : isConfirmingTransaction ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Confirming transaction...
-                        </>
-                      ) : (
-                        <>
-                          <Rocket className="w-4 h-4 mr-2" />
-                          Enter Launch Sequence
-                        </>
-                      )}
-                    </Button>
-
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl h-12 font-medium"
-                        onClick={disconnect}
-                      >
-                        <Wallet className="w-4 h-4 mr-2" />
-                        Change Wallet
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl h-12 font-medium"
-                        onClick={disconnect}
-                      >
-                        Disconnect
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4">
-                  <div className="flex items-center gap-2 text-blue-50 font-medium">
-                    <Clock3 className="w-4 h-4 text-blue-200" />
-                    Presale phase
-                  </div>
-                  <div className="text-blue-100/60 text-sm mt-2">
-                    Batch 1 currently active. Later batches unlock sequentially as the
-                    mission advances.
-                  </div>
-                </div>
-                <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4">
-                  <div className="flex items-center gap-2 text-blue-50 font-medium">
-                    <ShieldCheck className="w-4 h-4 text-blue-200" />
-                    Security note
-                  </div>
-                  <div className="text-blue-100/60 text-sm mt-2">
-                    Only use supported wallets and supported networks. Confirm all
-                    transaction details before submission.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid lg:grid-cols-[0.9fr_1.1fr] gap-6 pb-12">
-          <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6 md:p-8">
-            <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">
-              Mission checks
-            </div>
-            <div className="text-3xl font-semibold mt-2 text-blue-50">
-              Pre-launch checklist
-            </div>
-            <div className="space-y-4 mt-6">
-              {missionChecks.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-blue-400/20 bg-black/30 p-4 flex items-center gap-3"
-                >
-                  <CheckCircle2 className="w-5 h-5 text-cyan-200" />
-                  <div className="text-blue-100/75">{item}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-sky-400/10 p-6 md:p-8">
-            <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">
-              Batch telemetry
-            </div>
-            <div className="text-3xl font-semibold mt-2 text-blue-50">
-              Presale progression
-            </div>
-            <div className="space-y-5 mt-6">
-              {batches.map((batch) => (
-                <div
-                  key={batch.batch}
-                  className="rounded-3xl border border-blue-400/20 bg-black/30 p-5"
-                >
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div>
-                      <div className="text-xl font-semibold text-blue-50">
-                        {batch.batch}
-                      </div>
-                      <div className="text-sm text-blue-100/55 mt-1">
-                        Entry price {batch.price}
-                      </div>
-                    </div>
+                  {transactionNotice && (
                     <div
-                      className={`rounded-full px-4 py-2 text-sm border ${
-                        batch.status === 'Live now'
-                          ? 'border-cyan-300/20 bg-cyan-300/10 text-cyan-100'
-                          : 'border-blue-400/20 bg-blue-500/5 text-blue-100/70'
+                      className={`mt-4 min-h-[56px] rounded-2xl p-4 text-sm flex items-center ${
+                        transactionNotice.type === 'warning'
+                          ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
+                          : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
                       }`}
                     >
-                      {batch.status}
+                      <span className="line-clamp-2">{transactionNotice.message}</span>
                     </div>
-                  </div>
-                  <div className="mt-4">
-                    <Progress value={batch.progress} className="bg-blue-950/60" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+                  )}
 
-        <section className="pb-8">
-          <div className="rounded-[2rem] border border-blue-400/20 bg-black/35 backdrop-blur-xl p-6 md:p-8">
-            <div className="grid md:grid-cols-3 gap-5">
-              <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
-                <div className="flex items-center gap-2 text-blue-50 font-medium">
-                  <CircleDollarSign className="w-4 h-4 text-cyan-200" />
-                  Current live price
-                </div>
-                <div className="text-4xl font-bold text-cyan-300 mt-3">$0.10</div>
-                <div className="text-sm text-blue-100/60 mt-2">
-                  Batch 1 pricing for early crew members.
+                  {activeTxHash && (
+                    <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+                      <div className="text-sm text-cyan-100/90">Transaction submitted</div>
+                      <div className="mt-2 break-all text-xs text-cyan-100/70">{activeTxHash}</div>
+                      {etherscanUrl && (
+                        <a
+                          href={etherscanUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center gap-1 text-sm text-cyan-100 hover:underline"
+                        >
+                          View on Etherscan
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {isTransactionConfirmed && (
+                    <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm text-emerald-100/85">
+                      Payment confirmed on Ethereum mainnet.
+                    </div>
+                  )}
+
+                  <Button
+                    className="mt-5 h-14 w-full rounded-2xl text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.28)]"
+                    onClick={handleLaunchSequence}
+                    disabled={!canSubmitTransaction}
+                  >
+                    {isSendingTransaction ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Opening wallet...
+                      </>
+                    ) : isWritingContract ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Opening wallet...
+                      </>
+                    ) : isConfirmingTransaction ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Confirming transaction...
+                      </>
+                    ) : (
+                      'Buy $ARTM'
+                    )}
+                  </Button>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      className="h-12 rounded-2xl font-medium"
+                      onClick={disconnect}
+                    >
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Change Wallet
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-12 rounded-2xl font-medium"
+                      onClick={disconnect}
+                    >
+                      Disconnect
+                    </Button>
+                  </div>
                 </div>
               </div>
-              <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
-                <div className="flex items-center gap-2 text-blue-50 font-medium">
-                  <Moon className="w-4 h-4 text-cyan-200" />
-                  Listing objective
-                </div>
-                <div className="text-4xl font-bold text-cyan-300 mt-3">$1.00</div>
-                <div className="text-sm text-blue-100/60 mt-2">
-                  Targeted Tier 1 exchange launch aligned to Artemis III.
-                </div>
+            )}
+          </div>
+
+          <div className="mx-auto mt-8 max-w-2xl">
+            <Divider />
+          </div>
+
+          <div className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-sm font-medium text-white">
+                <Lock className="h-4 w-4 text-cyan-200" />
+                Liquidity locked
               </div>
-              <div className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
-                <div className="flex items-center gap-2 text-blue-50 font-medium">
-                  <Lock className="w-4 h-4 text-cyan-200" />
-                  Allocation threshold
-                </div>
-                <div className="text-4xl font-bold text-cyan-300 mt-3">$25</div>
-                <div className="text-sm text-blue-100/60 mt-2">
-                  Minimum contribution to enter the manifest.
-                </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-sm font-medium text-white">
+                <TrendingDown className="h-4 w-4 text-cyan-200" />
+                Fixed supply
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-2 text-sm font-medium text-white">
+                <ShieldCheck className="h-4 w-4 text-cyan-200" />
+                Team vested
               </div>
             </div>
           </div>
@@ -1204,4 +839,15 @@ const handleCancelWalletConnection = () => {
       </div>
     </div>
   );
+}
+
+export function __testables() {
+  return {
+    formatAddress,
+    validateAmount,
+    calculateEstimatedUsdValue,
+    calculateEstimatedTokens,
+    MINIMUM_USD,
+    CURRENT_BATCH_PRICE,
+  };
 }
