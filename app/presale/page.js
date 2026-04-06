@@ -47,7 +47,7 @@ const batches = [
 
 const missionChecks = [
   'Crew manifest open',
-  'Minimum allocation $250',
+  'Minimum allocation $25',
   'Accepted assets: ETH, USDC, USDT',
   'Listing target aligned to Artemis III',
 ];
@@ -375,7 +375,7 @@ export default function ArtemisPresalePage() {
     }
 
     if (!meetsMinimum) {
-      setActionMessage('Minimum boarding is $250 equivalent.');
+      setActionMessage('Minimum boarding is $25 equivalent.');
       return;
     }
 
@@ -717,7 +717,7 @@ export default function ArtemisPresalePage() {
                         </div>
                       </div>
                       <div className="rounded-full border border-blue-400/20 bg-black/30 px-4 py-2 text-sm text-blue-100/75">
-                        Minimum boarding: $250
+                        Minimum boarding: $25
                       </div>
                     </div>
 
@@ -1023,7 +1023,7 @@ export default function ArtemisPresalePage() {
                   <Lock className="w-4 h-4 text-cyan-200" />
                   Allocation threshold
                 </div>
-                <div className="text-4xl font-bold text-cyan-300 mt-3">$250</div>
+                <div className="text-4xl font-bold text-cyan-300 mt-3">$25</div>
                 <div className="text-sm text-blue-100/60 mt-2">
                   Minimum contribution to enter the manifest.
                 </div>
