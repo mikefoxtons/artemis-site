@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   useAccount,
-  useConnect,
   useDisconnect,
   useSendTransaction,
   useSwitchChain,
@@ -14,7 +13,6 @@ import { parseEther, parseUnits } from 'viem';
 import { mainnet } from 'wagmi/chains';
 import {
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   Copy,
   ExternalLink,
@@ -23,8 +21,8 @@ import {
   ShieldCheck,
   TrendingDown,
   Wallet,
-  X,
 } from 'lucide-react';
+import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 
 import {
   MINIMUM_USD,
@@ -32,12 +30,6 @@ import {
   USDT_ETHEREUM_ADDRESS,
   ERC20_TRANSFER_ABI,
 } from '@/lib/web3/constants';
-
-import {
-  normaliseConnectorName,
-  sortConnectors,
-  getWalletDescription,
-} from '@/lib/web3/wallets';
 
 import {
   mapTransactionErrorToNotice,
@@ -57,6 +49,16 @@ const acceptedAssets = [
 function formatAddress(address) {
   if (!address) return '';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function normaliseConnectorName(name = '') {
+  const lower = name.toLowerCase();
+
+  if (lower.includes('meta')) return 'MetaMask';
+  if (lower.includes('coinbase')) return 'Coinbase Wallet';
+  if (lower.includes('walletconnect')) return 'WalletConnect';
+
+  return name;
 }
 
 function Button({ className = '', variant = 'default', children, type = 'button', ...props }) {
@@ -110,11 +112,10 @@ function validateAmount(amountValue) {
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
-function calculateEstimatedUsdValue(amountValue, asset, ethUsdPrice) {
+function calculateEstimatedUsdValue(amountValue, asset, assetUsdPrice) {
   const amount = validateAmount(amountValue);
   if (amount <= 0) return 0;
-  if (asset === 'ETH') return amount * ethUsdPrice;
-  return amount;
+  return amount * assetUsdPrice;
 }
 
 function calculateEstimatedTokens(usdValue) {
@@ -133,13 +134,13 @@ export default function ArtemisPresalePage() {
   const [priceLoading, setPriceLoading] = useState(true);
   const [priceError, setPriceError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
-  const [connectingWallet, setConnectingWallet] = useState(null);
   const [walletNotice, setWalletNotice] = useState(null);
   const [transactionNotice, setTransactionNotice] = useState(null);
 
   const { address, isConnected, connector, chain } = useAccount();
-  const { connect, connectors, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
+  const { openConnectModal } = useConnectModal();
+  const { openAccountModal } = useAccountModal();
   const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
 
   const {
@@ -211,30 +212,6 @@ export default function ArtemisPresalePage() {
       clearInterval(interval);
     };
   }, []);
-
-  useEffect(() => {
-    if (isConnected) {
-      setConnectingWallet(null);
-    }
-  }, [isConnected]);
-
-  useEffect(() => {
-    if (!connectError) return;
-
-    const message = connectError?.message?.toLowerCase?.() || '';
-
-    setConnectingWallet(null);
-    setWalletNotice(mapWalletErrorToNotice(connectError));
-
-    if (
-      !message.includes('user rejected') &&
-      !message.includes('user denied') &&
-      !message.includes('rejected') &&
-      !message.includes('declined')
-    ) {
-      console.error(connectError);
-    }
-  }, [connectError]);
 
   useEffect(() => {
     if (!walletNotice) return;
@@ -317,28 +294,6 @@ export default function ArtemisPresalePage() {
     [estimatedUsdValue]
   );
 
-  const supportedConnectors = useMemo(() => {
-    if (!isMounted) return [];
-
-    const filtered = connectors.filter((item) => {
-      const name = normaliseConnectorName(item.name);
-      return ['MetaMask', 'WalletConnect'].includes(name);
-    });
-
-    const unique = filtered.filter((connectorItem, index, array) => {
-      return (
-        index ===
-        array.findIndex(
-          (item) =>
-            item.id === connectorItem.id ||
-            normaliseConnectorName(item.name) === normaliseConnectorName(connectorItem.name)
-        )
-      );
-    });
-
-    return sortConnectors(unique);
-  }, [connectors, isMounted]);
-
   const selectedWalletName = connector ? normaliseConnectorName(connector.name) : null;
   const isOnEthereumMainnet = chain?.id === mainnet.id;
   const meetsMinimum = estimatedUsdValue >= MINIMUM_USD;
@@ -351,8 +306,8 @@ export default function ArtemisPresalePage() {
   const selectedTokenAddress = isUsdcPurchase
     ? USDC_ETHEREUM_ADDRESS
     : isUsdtPurchase
-    ? USDT_ETHEREUM_ADDRESS
-    : null;
+      ? USDT_ETHEREUM_ADDRESS
+      : null;
 
   const selectedTokenDecimals = isTokenPurchase ? 6 : 18;
 
@@ -392,16 +347,28 @@ export default function ArtemisPresalePage() {
     switchChain({ chainId: mainnet.id });
   };
 
-  const handleWalletConnect = (walletConnector) => {
-    const walletName = normaliseConnectorName(walletConnector.name);
+  const handleOpenWalletModal = () => {
     setWalletNotice(null);
-    setConnectingWallet(walletName);
-    connect({ connector: walletConnector });
+
+    if (!openConnectModal) {
+      setWalletNotice(
+        mapWalletErrorToNotice(
+          new Error('Wallet modal unavailable. Check RainbowKit provider setup.')
+        )
+      );
+      return;
+    }
+
+    openConnectModal();
   };
 
-  const handleCancelWalletConnection = () => {
-    setConnectingWallet(null);
-    setWalletNotice(null);
+  const handleManageWallet = () => {
+    if (openAccountModal) {
+      openAccountModal();
+      return;
+    }
+
+    disconnect();
   };
 
   const handleLaunchSequence = () => {
@@ -503,8 +470,12 @@ export default function ArtemisPresalePage() {
             <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
               Secure your $ARTM allocation
             </h1>
-            <div className="mt-4 text-xl font-medium text-cyan-300 md:text-2xl">Batch 1 — $0.25</div>
-            <p className="mt-2 text-sm text-blue-100/60 md:text-base">Price increases as batches fill</p>
+            <div className="mt-4 text-xl font-medium text-cyan-300 md:text-2xl">
+              Batch 1 — $0.25
+            </div>
+            <p className="mt-2 text-sm text-blue-100/60 md:text-base">
+              Price increases as batches fill
+            </p>
           </div>
 
           <div className="mx-auto mt-8 max-w-2xl">
@@ -515,98 +486,35 @@ export default function ArtemisPresalePage() {
             {!isConnected ? (
               <div className="space-y-4">
                 <div className="rounded-[1.75rem] border border-white/10 bg-black/20 p-5">
-                  <div className="space-y-3">
-                    {!isMounted ? (
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-blue-100/60">
-                        Detecting available wallets...
-                      </div>
-                    ) : connectingWallet ? (
-                      <div className="rounded-3xl border border-cyan-300/20 bg-white/[0.03] p-5">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10">
-                            <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-white">Connecting to {connectingWallet}</div>
-                            <div className="mt-2 text-sm leading-7 text-blue-100/65">
-                              Check your wallet to continue.
-                            </div>
-                          </div>
-                        </div>
+                  <Button
+                    className="h-14 w-full rounded-2xl text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.28)]"
+                    onClick={handleOpenWalletModal}
+                    disabled={!isMounted}
+                  >
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Connect Wallet
+                  </Button>
 
-                        <div className="mt-5 grid grid-cols-2 gap-3">
-                          <Button
-                            variant="outline"
-                            className="h-12 rounded-2xl font-medium"
-                            onClick={handleCancelWalletConnection}
-                          >
-                            <X className="mr-2 h-4 w-4" />
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-12 rounded-2xl font-medium"
-                            onClick={handleCancelWalletConnection}
-                          >
-                            <Wallet className="mr-2 h-4 w-4" />
-                            Choose Another
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {supportedConnectors.map((walletConnector) => {
-                          const walletName = normaliseConnectorName(walletConnector.name);
-
-                          return (
-                            <button
-                              type="button"
-                              key={`${walletConnector.id}-${walletName}`}
-                              onClick={() => handleWalletConnect(walletConnector)}
-                              disabled={Boolean(connectingWallet)}
-                              className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-left transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-cyan-300/10">
-                                  <Wallet className="h-5 w-5 text-cyan-200" />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-white">{walletName}</div>
-                                  <div className="mt-1 text-sm text-blue-100/55">
-                                    {getWalletDescription(walletName)}
-                                  </div>
-                                </div>
-                              </div>
-                              <ArrowRight className="h-4 w-4 text-blue-200" />
-                            </button>
-                          );
-                        })}
-
-                        {supportedConnectors.length === 0 && (
-                          <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
-                            No supported wallet connectors were found. Check that MetaMask and WalletConnect are configured in your wagmi setup.
-                          </div>
-                        )}
-
-                        {walletNotice && (
-                          <div
-                            className={`min-h-[56px] rounded-2xl p-4 text-sm flex items-center ${
-                              walletNotice.type === 'warning'
-                                ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
-                                : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
-                            }`}
-                          >
-                            <span className="line-clamp-2">{walletNotice.message}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
+                  <div className="mt-4 text-center text-sm text-blue-100/60">
+                    Choose MetaMask or WalletConnect in the wallet modal.
                   </div>
+
+                  {walletNotice && (
+                    <div
+                      className={`mt-4 flex min-h-[56px] items-center rounded-2xl p-4 text-sm ${
+                        walletNotice.type === 'warning'
+                          ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
+                          : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
+                      }`}
+                    >
+                      <span className="line-clamp-2">{walletNotice.message}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-3xl border border-emerald-300/20 bg-emerald-400/10 p-4 flex items-start gap-3">
+                <div className="flex items-start gap-3 rounded-3xl border border-emerald-300/20 bg-emerald-400/10 p-4">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-200" />
                   <div className="w-full">
                     <div className="font-medium text-emerald-100">
@@ -691,7 +599,9 @@ export default function ArtemisPresalePage() {
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.24em] text-blue-200/45">You receive</div>
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-blue-200/45">
+                      You receive
+                    </div>
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <div className="text-3xl font-semibold text-white">{estimatedTokens} ARTM</div>
                       <div className="text-sm text-blue-100/55">at $0.25</div>
@@ -703,9 +613,7 @@ export default function ArtemisPresalePage() {
                         ) : priceError ? (
                           priceError
                         ) : (
-                          <>
-                            1 ETH = ${ethUsdPrice?.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                          </>
+                          <>1 ETH = ${ethUsdPrice?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</>
                         )
                       ) : (
                         <>1 {selectedAsset} = $1.00</>
@@ -730,7 +638,7 @@ export default function ArtemisPresalePage() {
 
                   {transactionNotice && (
                     <div
-                      className={`mt-4 min-h-[56px] rounded-2xl p-4 text-sm flex items-center ${
+                      className={`mt-4 flex min-h-[56px] items-center rounded-2xl p-4 text-sm ${
                         transactionNotice.type === 'warning'
                           ? 'border border-amber-300/20 bg-amber-400/10 text-amber-100/80'
                           : 'border border-red-300/20 bg-red-400/10 text-red-100/80'
@@ -793,10 +701,10 @@ export default function ArtemisPresalePage() {
                     <Button
                       variant="outline"
                       className="h-12 rounded-2xl font-medium"
-                      onClick={disconnect}
+                      onClick={handleManageWallet}
                     >
                       <Wallet className="mr-2 h-4 w-4" />
-                      Change Wallet
+                      Manage Wallet
                     </Button>
                     <Button
                       variant="outline"
@@ -844,6 +752,7 @@ export default function ArtemisPresalePage() {
 export function __testables() {
   return {
     formatAddress,
+    normaliseConnectorName,
     validateAmount,
     calculateEstimatedUsdValue,
     calculateEstimatedTokens,
