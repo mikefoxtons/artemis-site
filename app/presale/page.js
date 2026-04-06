@@ -30,25 +30,28 @@ import {
   X,
 } from 'lucide-react';
 
+import {
+  MINIMUM_USD,
+  USDC_ETHEREUM_ADDRESS,
+  USDT_ETHEREUM_ADDRESS,
+  ERC20_TRANSFER_ABI,
+} from '@/lib/web3/constants';
+
+import {
+  normaliseConnectorName,
+  sortConnectors,
+  getWalletDescription,
+} from '@/lib/web3/wallets';
+
+import {
+  mapTransactionErrorToNotice,
+  mapWalletErrorToNotice,
+  isUserRejectedError,
+} from '@/lib/web3/errors';
+
 const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET;
-const MINIMUM_USD = 25;
 
-const USDC_ETHEREUM_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-const USDT_ETHEREUM_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-
-const ERC20_TRANSFER_ABI = [
-  {
-    type: 'function',
-    name: 'transfer',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'value', type: 'uint256' },
-    ],
-    outputs: [{ type: 'bool' }],
-  },
-];
 
 const acceptedAssets = [
   { symbol: 'ETH', network: 'Ethereum', priceLabel: 'Pay with native ETH' },
@@ -91,146 +94,6 @@ function getTimeRemaining(targetDate) {
 function formatAddress(address) {
   if (!address) return '';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
-function normaliseConnectorName(name = '') {
-  const lower = name.toLowerCase();
-
-  if (lower.includes('meta')) return 'MetaMask';
-  if (lower.includes('coinbase')) return 'Coinbase Wallet';
-  if (lower.includes('walletconnect')) return 'WalletConnect';
-
-  return name;
-}
-
-function sortConnectors(connectors) {
-  const order = {
-    MetaMask: 1,
-    'Coinbase Wallet': 2,
-    WalletConnect: 3,
-  };
-
-  return [...connectors].sort((a, b) => {
-    const aName = normaliseConnectorName(a.name);
-    const bName = normaliseConnectorName(b.name);
-    return (order[aName] || 999) - (order[bName] || 999);
-  });
-}
-
-function mapTransactionErrorToNotice(error) {
-  const message = error?.message?.toLowerCase?.() || '';
-
-  if (
-    message.includes('user rejected') ||
-    message.includes('user denied') ||
-    message.includes('rejected') ||
-    message.includes('declined')
-  ) {
-    return {
-      type: 'warning',
-      message: 'Transaction cancelled',
-    };
-  }
-
-  if (
-    message.includes('insufficient funds') ||
-    message.includes('exceeds balance') ||
-    message.includes('transfer amount exceeds balance')
-  ) {
-    return {
-      type: 'error',
-      message: 'Insufficient balance for this transaction',
-    };
-  }
-
-  if (
-    message.includes('gas required exceeds allowance') ||
-    message.includes('intrinsic gas too low') ||
-    message.includes('out of gas')
-  ) {
-    return {
-      type: 'error',
-      message: 'Transaction could not be completed due to gas settings',
-    };
-  }
-
-  if (
-    message.includes('nonce') ||
-    message.includes('replacement transaction underpriced')
-  ) {
-    return {
-      type: 'error',
-      message: 'A wallet transaction conflict occurred. Please try again',
-    };
-  }
-
-  if (
-    message.includes('execution reverted') ||
-    message.includes('call exception')
-  ) {
-    return {
-      type: 'error',
-      message: 'Transaction failed to execute',
-    };
-  }
-
-  return {
-    type: 'error',
-    message: 'Unable to complete transaction',
-  };
-}
-
-function mapWalletErrorToNotice(error) {
-  const message = error?.message?.toLowerCase?.() || '';
-
-  if (
-    message.includes('user rejected') ||
-    message.includes('user denied') ||
-    message.includes('rejected') ||
-    message.includes('declined')
-  ) {
-    return {
-      type: 'warning',
-      message: 'Connection cancelled',
-    };
-  }
-
-  if (message.includes('connector not found')) {
-    return {
-      type: 'error',
-      message: 'Wallet not available',
-    };
-  }
-
-  if (message.includes('switch chain') || message.includes('chain mismatch')) {
-    return {
-      type: 'warning',
-      message: 'Switch to Ethereum mainnet and try again',
-    };
-  }
-
-  return {
-    type: 'error',
-    message: 'Unable to connect wallet',
-  };
-}
-
-function isUserRejectedError(error) {
-  const message = error?.message?.toLowerCase?.() || '';
-
-  return (
-    message.includes('user rejected') ||
-    message.includes('user denied') ||
-    message.includes('rejected') ||
-    message.includes('declined')
-  );
-}
-
-function getWalletDescription(walletName) {
-  if (walletName === 'MetaMask') return 'Browser extension or mobile app';
-  if (walletName === 'WalletConnect') return 'Use mobile or external wallet';
-  if (walletName === 'Coinbase Wallet') return 'Browser extension or mobile app';
-  return 'Secure wallet connection';
 }
 
 function Button({ className = '', variant = 'default', children, type = 'button', ...props }) {
