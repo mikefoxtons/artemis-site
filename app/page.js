@@ -1,8 +1,7 @@
-'use client';
-
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import React from 'react';
+import Link from 'next/link';
 import { Rocket, Wallet, Zap, ArrowRight, Satellite, ShieldCheck, Lock, TrendingDown } from 'lucide-react';
+import CountdownCard from './components/landing/CountdownCard';
 
 const missionTimeline = [
   {
@@ -55,45 +54,20 @@ const ctaCards = [
   },
 ];
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const PRESALE_END_DATE = '2027-03-31T23:59:59Z';
-
-function getTimeRemaining(targetDate) {
-  const now = new Date().getTime();
-  const target = new Date(targetDate).getTime();
-  const difference = target - now;
-
-  if (difference <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, complete: true };
-  }
-
-  return {
-    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((difference / (1000 * 60)) % 60),
-    seconds: Math.floor((difference / 1000) % 60),
-    complete: false,
-  };
-}
-
-function Button({ className = '', variant = 'default', children, ...props }) {
+function ButtonLink({ href, className = '', variant = 'default', children }) {
   const base =
     'inline-flex items-center justify-center transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 rounded-2xl font-semibold border backdrop-blur-md active:scale-95';
   const variants = {
     default:
       'bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white border-blue-300/30 shadow-[0_10px_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200 hover:shadow-[0_0_40px_rgba(56,189,248,0.45)]',
     outline:
-      'border border-blue-400/40 bg-blue-500/10 text-blue-100 shadow-inner hover:bg-blue-500/20 hover:border-blue-300/60'
+      'border border-blue-400/40 bg-blue-500/10 text-blue-100 shadow-inner hover:bg-blue-500/20 hover:border-blue-300/60',
   };
 
   return (
-    <button className={`${base} ${variants[variant] || variants.default} ${className}`} {...props}>
+    <Link href={href} className={`${base} ${variants[variant] || variants.default} ${className}`}>
       {children}
-    </button>
+    </Link>
   );
 }
 
@@ -109,38 +83,10 @@ function Progress({ value = 0, className = '' }) {
   );
 }
 
+
 export default function ArtemisLandingPage() {
-  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(PRESALE_END_DATE));
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-
-    const interval = setInterval(() => {
-      setTimeRemaining(getTimeRemaining(PRESALE_END_DATE));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const countdownBlocks = useMemo(
-    () => [
-      { label: 'Days', value: isMounted ? String(timeRemaining.days).padStart(2, '0') : '--' },
-      { label: 'Hours', value: isMounted ? String(timeRemaining.hours).padStart(2, '0') : '--' },
-      { label: 'Minutes', value: isMounted ? String(timeRemaining.minutes).padStart(2, '0') : '--' },
-      { label: 'Seconds', value: isMounted ? String(timeRemaining.seconds).padStart(2, '0') : '--' },
-    ],
-    [timeRemaining, isMounted]
-  );
-
-  const goToPresale = () => {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/presale';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative">
+    <main className="min-h-screen bg-black text-white overflow-hidden relative">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.45),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.35),transparent_35%),radial-gradient(circle_at_20%_80%,rgba(147,197,253,0.25),transparent_35%)]" />
       <div
         className="absolute inset-0 opacity-30"
@@ -166,24 +112,28 @@ export default function ArtemisLandingPage() {
             </div>
           </div>
 
-          <Button
+          <ButtonLink
+            href="/presale"
             variant="outline"
-            onClick={goToPresale}
             className="rounded-2xl h-11 px-5 text-sm font-semibold"
           >
             <Wallet className="w-4 h-4 mr-2" />
             Buy $ARTM
-          </Button>
+          </ButtonLink>
         </header>
 
-        <section className="grid lg:grid-cols-2 gap-10 items-center pt-12 pb-12">
-          <motion.div variants={fadeUp} initial="hidden" animate="visible">
+        <section
+          id="hero"
+          aria-labelledby="hero-heading"
+          className="grid lg:grid-cols-2 gap-10 items-center pt-12 pb-12"
+        >
+          <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm text-blue-200 mb-5">
               <Satellite className="w-4 h-4" />
               Mission countdown now live
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-semibold leading-[0.95] tracking-tight">
+            <h1 id="hero-heading" className="text-5xl md:text-7xl font-semibold leading-[0.95] tracking-tight">
               The coin
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-blue-400 to-sky-300">
                 built to go to the Moon.
@@ -195,58 +145,28 @@ export default function ArtemisLandingPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button
-                onClick={goToPresale}
+              <ButtonLink
+                href="/presale"
                 className="rounded-2xl h-14 px-7 text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.35)]"
               >
                 <Rocket className="w-4 h-4 mr-2" />
                 Board Presale Now
-              </Button>
+              </ButtonLink>
 
-              <Button
+              <ButtonLink
+                href="/presale"
                 variant="outline"
-                onClick={goToPresale}
                 className="rounded-2xl h-14 px-7 text-base font-semibold"
               >
                 <Wallet className="w-4 h-4 mr-2" />
                 Connect Wallet
-              </Button>
+              </ButtonLink>
             </div>
 
-            <div className="mt-8 rounded-[2rem] border border-blue-400/20 bg-blue-500/5 backdrop-blur-xl p-5 md:p-6 max-w-2xl">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-blue-200/45">Live countdown</div>
-                  <div className="text-2xl md:text-3xl font-semibold text-blue-50 mt-2">
-                    Presale ends 31 March 2027
-                  </div>
-                </div>
-                <div className="rounded-full border border-blue-400/20 bg-black/30 px-4 py-2 text-sm text-blue-100/75">
-                  {!isMounted
-                    ? 'Syncing telemetry'
-                    : timeRemaining.complete
-                      ? 'Presale complete'
-                      : 'Final boarding in progress'}
-                </div>
-              </div>
+            <CountdownCard />
+          </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                {countdownBlocks.map((block) => (
-                  <div
-                    key={block.label}
-                    className="rounded-3xl border border-blue-400/20 bg-black/35 p-4 text-center"
-                  >
-                    <div className="text-3xl md:text-4xl font-semibold text-blue-50">{block.value}</div>
-                    <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45 mt-2">
-                      {block.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div variants={fadeUp} initial="hidden" animate="visible">
+          <div delay={0.1}>
             <div className="relative rounded-[2rem] border border-blue-400/20 bg-blue-500/5 backdrop-blur-2xl p-4 shadow-2xl shadow-blue-900/60">
               <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden relative border border-blue-400/20 bg-black">
                 <img
@@ -307,18 +227,18 @@ export default function ArtemisLandingPage() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </section>
 
-        <section className="py-4">
+        <section id="buy" aria-labelledby="buy-heading" className="py-4">
           <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-6 items-stretch mb-6">
             <div className="rounded-[2rem] border border-cyan-300/25 bg-gradient-to-br from-blue-500/15 via-sky-400/10 to-cyan-300/15 p-6 md:p-8 shadow-[0_0_60px_rgba(56,189,248,0.12)]">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <div className="text-sm uppercase tracking-[0.35em] text-cyan-200/55">Mission call to action</div>
-                  <div className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50">
+                  <h2 id="buy-heading" className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50">
                     Join the crew before the hatch seals.
-                  </div>
+                  </h2>
                 </div>
                 <div className="rounded-full border border-cyan-300/20 bg-black/25 px-4 py-2 text-sm text-cyan-100/80">
                   Presale now open
@@ -337,11 +257,11 @@ export default function ArtemisLandingPage() {
                         <Icon className="w-5 h-5 text-cyan-200" />
                       </div>
                       <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">{card.eyebrow}</div>
-                      <div className="text-xl font-semibold text-blue-50 mt-2">{card.title}</div>
+                      <h3 className="text-xl font-semibold text-blue-50 mt-2">{card.title}</h3>
                       <div className="text-blue-100/65 mt-3 leading-7 text-sm">{card.text}</div>
-                      <Button onClick={goToPresale} className="w-full mt-auto rounded-2xl h-12">
+                      <ButtonLink href="/presale" className="w-full mt-auto rounded-2xl h-12">
                         {card.button}
-                      </Button>
+                      </ButtonLink>
                     </div>
                   );
                 })}
@@ -350,7 +270,7 @@ export default function ArtemisLandingPage() {
 
             <div className="rounded-[2rem] border border-blue-400/20 bg-black/35 backdrop-blur-xl p-6 md:p-8">
               <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Buy module</div>
-              <div className="text-3xl font-semibold mt-2 text-blue-50">Launch-ready purchase panel</div>
+              <h2 className="text-3xl font-semibold mt-2 text-blue-50">Launch-ready purchase panel</h2>
               <div className="text-blue-100/65 mt-3 leading-7">
                 Launch interface. Connect, fuel up, and secure your allocation before final boarding closes.
               </div>
@@ -359,7 +279,7 @@ export default function ArtemisLandingPage() {
                 <div className="flex items-center justify-between mb-5">
                   <div>
                     <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Crew access</div>
-                    <div className="text-xl font-semibold text-blue-50 mt-2">Buy $ARTM now</div>
+                    <h3 className="text-xl font-semibold text-blue-50 mt-2">Buy $ARTM now</h3>
                   </div>
                   <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200">
                     Wallet supported
@@ -383,13 +303,13 @@ export default function ArtemisLandingPage() {
                   </div>
                 </div>
 
-                <Button
-                  onClick={goToPresale}
+                <ButtonLink
+                  href="/presale"
                   className="w-full mt-5 rounded-2xl h-14 text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.35)]"
                 >
                   Buy $ARTM Now
                   <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                </ButtonLink>
 
                 <div className="grid grid-cols-3 gap-3 mt-4 text-center">
                   {[
@@ -407,22 +327,26 @@ export default function ArtemisLandingPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-blue-400/20 bg-gradient-to-r from-blue-500/10 via-blue-400/5 to-sky-300/10 p-6 md:p-8">
+          <div
+            id="mission-alignment"
+            aria-labelledby="mission-alignment-heading"
+            className="rounded-[2rem] border border-blue-400/20 bg-gradient-to-r from-blue-500/10 via-blue-400/5 to-sky-300/10 p-6 md:p-8"
+          >
             <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Mission Alignment</div>
-            <div className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50">
+            <h2 id="mission-alignment-heading" className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50">
               Artemis launches into the biggest Moon narrative on Earth.
-            </div>
+            </h2>
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
                 <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Global event</div>
-                <div className="text-2xl font-semibold text-blue-50 mt-2">Artemis III lunar mission</div>
+                <h3 className="text-2xl font-semibold text-blue-50 mt-2">Artemis III lunar mission</h3>
                 <div className="text-blue-100/65 mt-2 leading-7">
                   NASA’s return-to-the-Moon mission gives the project a real-world attention anchor for its biggest public moment.
                 </div>
               </div>
               <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
                 <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Launch strategy</div>
-                <div className="text-2xl font-semibold text-blue-50 mt-2">Tier 1 exchange ambition</div>
+                <h3 className="text-2xl font-semibold text-blue-50 mt-2">Tier 1 exchange ambition</h3>
                 <div className="text-blue-100/65 mt-2 leading-7">
                   Presale closes on 31 March 2027, with launch momentum designed to build into Artemis III and maximise visibility.
                 </div>
@@ -444,36 +368,35 @@ export default function ArtemisLandingPage() {
           </div>
         </section>
 
-        <section id="roadmap" className="py-12">
+        <section id="roadmap" aria-labelledby="roadmap-heading" className="py-12">
           <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Flight plan</div>
-          <h2 className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">
+          <h2 id="roadmap-heading" className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">
             Built around a real-world space timeline.
           </h2>
 
           <div className="mt-8 space-y-4">
-            {missionTimeline.map((item, index) => (
-              <motion.div
+            {missionTimeline.map((item) => (
+              <div
                 key={item.phase}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.08 }}
                 className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6"
               >
                 <div className="text-blue-200/50 text-sm">{item.date}</div>
-                <div className="text-xl font-semibold mt-2 text-blue-50">{item.phase}</div>
+                <h3 className="text-xl font-semibold mt-2 text-blue-50">{item.phase}</h3>
                 <div className="text-blue-100/60 mt-2">{item.description}</div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </section>
 
-        <section className="py-12">
+        <section id="pricing" aria-labelledby="pricing-heading" className="py-12">
           <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Pricing Model</div>
-          <h2 className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">Presale structure and raise target</h2>
+          <h2 id="pricing-heading" className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">
+            Presale structure and raise target
+          </h2>
 
           <div className="grid md:grid-cols-2 gap-6 mt-8">
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
-              <div className="text-xl font-semibold text-blue-50">Raise Target</div>
+              <h3 className="text-xl font-semibold text-blue-50">Raise Target</h3>
               <div className="text-4xl font-bold mt-2 text-cyan-300">~$3,125,000</div>
               <div className="text-blue-100/60 mt-3">
                 Structured to build momentum ahead of a major exchange launch aligned with Artemis III.
@@ -481,7 +404,7 @@ export default function ArtemisLandingPage() {
             </div>
 
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
-              <div className="text-xl font-semibold text-blue-50">Listing Price</div>
+              <h3 className="text-xl font-semibold text-blue-50">Listing Price</h3>
               <div className="text-4xl font-bold mt-2 text-cyan-300">$1.00</div>
               <div className="text-blue-100/60 mt-3">
                 Targeted Tier 1 exchange launch during peak attention around the Moon mission.
@@ -492,7 +415,7 @@ export default function ArtemisLandingPage() {
           <div className="rounded-[2rem] border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-sky-400/10 p-6 mt-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <div className="text-xl font-semibold text-blue-50">Presale Batches</div>
+                <h3 className="text-xl font-semibold text-blue-50">Presale Batches</h3>
                 <div className="text-blue-100/60 mt-1 text-sm">Structured supply by tranche to reward early boarding.</div>
               </div>
               <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs uppercase tracking-[0.25em] text-cyan-200">
@@ -608,7 +531,7 @@ export default function ArtemisLandingPage() {
           <div className="grid md:grid-cols-3 gap-6 mt-6">
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
               <div className="text-blue-200/45 text-xs uppercase">Entry Advantage</div>
-              <div className="text-blue-50 font-semibold mt-2">Pre-launch position</div>
+              <h3 className="text-blue-50 font-semibold mt-2">Pre-launch position</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
                 Secure tokens before a potential Tier 1 exchange listing aligned with a major global narrative.
               </div>
@@ -616,7 +539,7 @@ export default function ArtemisLandingPage() {
 
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
               <div className="text-blue-200/45 text-xs uppercase">Narrative Driver</div>
-              <div className="text-blue-50 font-semibold mt-2">Artemis III</div>
+              <h3 className="text-blue-50 font-semibold mt-2">Artemis III</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
                 Launch timing is built around one of the most anticipated space missions in decades.
               </div>
@@ -624,7 +547,7 @@ export default function ArtemisLandingPage() {
 
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
               <div className="text-blue-200/45 text-xs uppercase">Market Behaviour</div>
-              <div className="text-blue-50 font-semibold mt-2">Price discovery potential</div>
+              <h3 className="text-blue-50 font-semibold mt-2">Price discovery potential</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
                 Major exchange launches often create sharp repricing and significant early volatility.
               </div>
@@ -632,9 +555,11 @@ export default function ArtemisLandingPage() {
           </div>
         </section>
 
-        <section className="py-12">
+        <section id="tokenomics" aria-labelledby="tokenomics-heading" className="py-12">
           <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Tokenomics</div>
-          <h2 className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">Mission supply structure</h2>
+          <h2 id="tokenomics-heading" className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">
+            Mission supply structure
+          </h2>
 
           <div className="grid sm:grid-cols-3 gap-4 mt-6">
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-4 flex items-center gap-3">
@@ -670,7 +595,7 @@ export default function ArtemisLandingPage() {
 
           <div className="grid md:grid-cols-2 gap-6 mt-8">
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
-              <div className="text-xl font-semibold text-blue-50">Total Supply</div>
+              <h3 className="text-xl font-semibold text-blue-50">Total Supply</h3>
               <div className="text-4xl font-bold mt-2 text-cyan-300">10,000,000 ARTM</div>
               <div className="text-blue-100/60 mt-3">
                 Fixed supply with no inflation, designed around scarcity and narrative-driven demand.
@@ -678,7 +603,7 @@ export default function ArtemisLandingPage() {
             </div>
 
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
-              <div className="text-xl font-semibold text-blue-50">Allocation</div>
+              <h3 className="text-xl font-semibold text-blue-50">Allocation</h3>
               <div className="space-y-4 mt-4">
                 {[
                   ['Presale', '50%'],
@@ -699,7 +624,7 @@ export default function ArtemisLandingPage() {
           <div className="grid md:grid-cols-3 gap-6 mt-6">
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
               <div className="text-blue-200/45 text-xs uppercase">Liquidity</div>
-              <div className="text-blue-50 font-semibold mt-2">Locked</div>
+              <h3 className="text-blue-50 font-semibold mt-2">Locked</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
                 100% of liquidity is locked at launch to ensure trust and stability during the initial trading phase.
               </div>
@@ -707,7 +632,7 @@ export default function ArtemisLandingPage() {
 
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
               <div className="text-blue-200/45 text-xs uppercase">Team Tokens</div>
-              <div className="text-blue-50 font-semibold mt-2">Vested</div>
+              <h3 className="text-blue-50 font-semibold mt-2">Vested</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
                 Team allocation subject to a 12 month cliff and 12 month vesting schedule.
               </div>
@@ -715,7 +640,7 @@ export default function ArtemisLandingPage() {
 
             <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
               <div className="text-blue-200/45 text-xs uppercase">Treasury</div>
-              <div className="text-blue-50 font-semibold mt-2">Mission Fund</div>
+              <h3 className="text-blue-50 font-semibold mt-2">Mission Fund</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
                 Strategic reserve used for listings, partnerships and long-term mission execution.
               </div>
@@ -723,6 +648,6 @@ export default function ArtemisLandingPage() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
   );
 }
