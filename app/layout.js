@@ -14,6 +14,10 @@ export const metadata = {
   description:
     'Join the Artemis presale and secure your $ARTM allocation before launch.',
 
+  verification: {
+    google: '8-TC18_G7qkTSam-Ccvk0CudU68lL4Qv4cu2na_VVM8',
+  },
+
   applicationName: 'Artemis',
 
   alternates: {
