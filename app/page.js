@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   Lock,
   TrendingDown,
+  X,
+  Send,
 } from 'lucide-react';
 import CountdownCard from './components/landing/CountdownCard';
 
@@ -153,14 +155,36 @@ export default function ArtemisLandingPage() {
             </div>
           </div>
 
-          <ButtonLink
-            href="/presale"
-            variant="outline"
-            className="rounded-2xl h-11 px-5 text-sm font-semibold"
-          >
-            <Wallet className="w-4 h-4 mr-2" />
-            Buy $ARTM3
-          </ButtonLink>
+          <div className="flex items-center gap-3">
+  {/* Social Icons */}
+  <a
+    href="https://x.com/artemisartm3"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="w-10 h-10 rounded-2xl border border-blue-400/20 bg-black/20 flex items-center justify-center text-blue-200/70 hover:text-white hover:border-blue-300/40 transition"
+  >
+    <X className="w-4 h-4" />
+  </a>
+
+  <a
+    href="https://t.me/artemisartm3official"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="w-10 h-10 rounded-2xl border border-blue-400/20 bg-black/20 flex items-center justify-center text-blue-200/70 hover:text-white hover:border-blue-300/40 transition"
+  >
+    <Send className="w-4 h-4" />
+  </a>
+
+  {/* Buy Button */}
+  <ButtonLink
+    href="/presale"
+    variant="outline"
+    className="rounded-2xl h-11 px-5 text-sm font-semibold"
+  >
+    <Wallet className="w-4 h-4 mr-2" />
+    Buy $ARTM3
+  </ButtonLink>
+</div>
         </header>
 
         <section
@@ -841,6 +865,45 @@ export default function ArtemisLandingPage() {
           </div>
         </section>
       </div>
+
+      <footer className="mt-16 pt-10 pb-8 border-t border-blue-400/10 text-center">
+
+      {/* Back to top */}
+      <div className="flex justify-center mb-6">
+        <a
+          href="#hero"
+          className="w-12 h-12 rounded-2xl border border-blue-400/20 bg-blue-500/10 flex items-center justify-center hover:bg-blue-500/20 transition"
+        >
+          <Rocket className="w-5 h-5 text-blue-200" />
+        </a>
+      </div>
+
+      {/* Social links again (optional but strong) */}
+      <div className="flex justify-center gap-4 mb-6">
+        <a
+          href="https://x.com/artemisartm3"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-200/60 hover:text-white transition"
+        >
+          <X className="w-5 h-5" />
+        </a>
+        <a
+          href="https://t.me/artemisartm3official"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-200/60 hover:text-white transition"
+        >
+          <Send className="w-5 h-5" />
+        </a>
+      </div>
+
+      {/* Disclaimer */}
+      <p className="text-xs text-blue-100/40 max-w-3xl mx-auto leading-6 px-4">
+        Cryptocurrency investments are highly speculative and involve significant risk. The value of cryptocurrencies can fluctuate widely, and there is a risk of losing all of your investment. You should carefully consider your investment objectives, level of experience, and risk tolerance before making any investment decisions.
+      </p>
+
+    </footer>
     </main>
   );
 }
