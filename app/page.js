@@ -1,6 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
-import { Rocket, Wallet, Zap, ArrowRight, Satellite, ShieldCheck, Lock, TrendingDown } from 'lucide-react';
+import {
+  Rocket,
+  Wallet,
+  Zap,
+  ArrowRight,
+  Satellite,
+  ShieldCheck,
+  Lock,
+  TrendingDown,
+} from 'lucide-react';
 import CountdownCard from './components/landing/CountdownCard';
 
 const missionTimeline = [
@@ -19,38 +28,69 @@ const missionTimeline = [
   {
     phase: 'ARTEMIS III — LAUNCH WINDOW',
     date: 'Target: Sept 2027 (NASA)',
-    description: 'Project launch aligns with Artemis III to capture peak global attention around the Moon mission.',
+    description:
+      'Project launch aligns with Artemis III to capture peak global attention around the Moon mission.',
     status: 'Primary Event',
   },
   {
     phase: 'ARTEMIS IV — EXPANSION',
     date: 'Target: 2028',
-    description: 'Post-launch growth phase including partnerships, ecosystem expansion and community development.',
+    description:
+      'Post-launch growth phase including partnerships, ecosystem expansion and community development.',
     status: 'Locked',
   },
 ];
 
-const ctaCards = [
+const faqItems = [
   {
-    eyebrow: 'Primary action',
-    title: 'Join the mission',
-    text: 'Secure your allocation before the presale closes and the final crew list is locked.',
-    button: 'Board Presale',
-    icon: Rocket,
+    question: 'What is Artemis?',
+    answer:
+      'Artemis is an Ethereum-based memecoin with a fixed supply of 10,000,000 ARTM3 tokens. The project is designed around the Artemis III Moon mission, combining a strong real-world narrative with a structured crypto presale and exchange launch strategy.',
   },
   {
-    eyebrow: 'Wallet ready',
-    title: 'Connect your wallet',
-    text: 'A fast crypto-native route for buyers ready to connect, review terms and purchase.',
-    button: 'Connect Wallet',
-    icon: Wallet,
+    question: 'How can I buy $ARTM3?',
+    answer:
+      'You can buy $ARTM3 through the live presale by connecting a compatible crypto wallet and paying with ETH, USDT or USDC on the Ethereum network.',
   },
   {
-    eyebrow: 'Fast entry',
-    title: 'Enter launch sequence',
-    text: 'A premium Web3 buying journey designed to feel immediate, simple and high-conviction.',
-    button: 'Launch Now',
-    icon: Zap,
+    question: 'Which network does Artemis use?',
+    answer:
+      'Artemis is built on Ethereum, allowing buyers to use widely supported wallets and a familiar on-chain buying experience.',
+  },
+  {
+    question: 'What is the total supply of $ARTM3?',
+    answer:
+      'The total supply is fixed at 10,000,000 ARTM3, with no inflation. This creates a scarcity-driven structure designed to support narrative momentum and long-term positioning.',
+  },
+  {
+    question: 'What is the presale structure?',
+    answer:
+      'The presale is split into multiple batches, with pricing increasing from $0.25 to $0.90. Early participants access the lowest pricing, while later rounds reflect increasing momentum.',
+  },
+  {
+    question: 'When does the presale end?',
+    answer:
+      'The presale is scheduled to close on 31 March 2027, after which final allocations will be locked ahead of the planned public launch phase.',
+  },
+  {
+    question: 'What is the target launch price?',
+    answer:
+      'The current target listing price is $1.00, aligned with the project’s broader launch strategy and exchange ambitions around the Artemis III mission window.',
+  },
+  {
+    question: 'Will Artemis be listed on exchanges?',
+    answer:
+      'The project is targeting a Tier 1 exchange listing, with launch timing designed to maximise visibility and narrative strength during the Artemis III period.',
+  },
+  {
+    question: 'Is liquidity locked?',
+    answer:
+      'Yes. Artemis is designed with locked liquidity at launch to help build trust, transparency and stability during the initial trading phase.',
+  },
+  {
+    question: 'Do I need a crypto wallet to participate?',
+    answer:
+      'Yes. You will need a compatible crypto wallet to connect and complete your purchase during the presale.',
   },
 ];
 
@@ -62,6 +102,8 @@ function ButtonLink({ href, className = '', variant = 'default', children }) {
       'bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 text-white border-blue-300/30 shadow-[0_10px_30px_rgba(59,130,246,0.35)] hover:from-blue-400 hover:via-sky-300 hover:to-cyan-200 hover:shadow-[0_0_40px_rgba(56,189,248,0.45)]',
     outline:
       'border border-blue-400/40 bg-blue-500/10 text-blue-100 shadow-inner hover:bg-blue-500/20 hover:border-blue-300/60',
+    ghost:
+      'border border-blue-400/20 bg-black/20 text-blue-100 hover:bg-blue-500/10 hover:border-blue-300/40',
   };
 
   return (
@@ -82,7 +124,6 @@ function Progress({ value = 0, className = '' }) {
     </div>
   );
 }
-
 
 export default function ArtemisLandingPage() {
   return (
@@ -118,7 +159,7 @@ export default function ArtemisLandingPage() {
             className="rounded-2xl h-11 px-5 text-sm font-semibold"
           >
             <Wallet className="w-4 h-4 mr-2" />
-            Buy $ARTM
+            Buy $ARTM3
           </ButtonLink>
         </header>
 
@@ -133,7 +174,10 @@ export default function ArtemisLandingPage() {
               Mission countdown now live
             </div>
 
-            <h1 id="hero-heading" className="text-5xl md:text-7xl font-semibold leading-[0.95] tracking-tight">
+            <h1
+              id="hero-heading"
+              className="text-5xl md:text-7xl font-semibold leading-[0.95] tracking-tight"
+            >
               The coin
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-blue-400 to-sky-300">
                 built to go to the Moon.
@@ -141,7 +185,14 @@ export default function ArtemisLandingPage() {
             </h1>
 
             <p className="mt-6 text-lg text-blue-100/70 max-w-2xl leading-8">
-              When Artemis III lands on the Moon, Artemis lands on a Tier 1 exchange — because in crypto, that is the Moon.
+              When Artemis III lands on the Moon, Artemis aims to launch $ARTM3 on a Tier 1
+              exchange — because in crypto, that is the Moon.
+            </p>
+
+            <p className="mt-5 text-base text-blue-100/65 max-w-2xl leading-8">
+              Artemis is an Ethereum-based memecoin with a fixed supply of 10,000,000 ARTM3
+              tokens. The live crypto presale allows buyers to purchase $ARTM3 using ETH, USDT or
+              USDC before the planned exchange launch.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
@@ -163,10 +214,22 @@ export default function ArtemisLandingPage() {
               </ButtonLink>
             </div>
 
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink href="#pricing" variant="ghost" className="rounded-2xl h-11 px-5 text-sm">
+                See Presale Pricing
+              </ButtonLink>
+              <ButtonLink href="#tokenomics" variant="ghost" className="rounded-2xl h-11 px-5 text-sm">
+                View Tokenomics
+              </ButtonLink>
+              <ButtonLink href="#faq" variant="ghost" className="rounded-2xl h-11 px-5 text-sm">
+                Read FAQ
+              </ButtonLink>
+            </div>
+
             <CountdownCard />
           </div>
 
-          <div delay={0.1}>
+          <div>
             <div className="relative rounded-[2rem] border border-blue-400/20 bg-blue-500/5 backdrop-blur-2xl p-4 shadow-2xl shadow-blue-900/60">
               <div className="aspect-[4/5] rounded-[1.5rem] overflow-hidden relative border border-blue-400/20 bg-black">
                 <img
@@ -179,7 +242,9 @@ export default function ArtemisLandingPage() {
 
                 <div className="absolute top-4 left-4 right-4">
                   <div className="rounded-3xl border border-blue-400/20 bg-black/50 p-3 backdrop-blur-md">
-                    <div className="text-xs text-blue-200/60 uppercase tracking-widest">Mission Tracker</div>
+                    <div className="text-xs text-blue-200/60 uppercase tracking-widest">
+                      Mission Tracker
+                    </div>
                     <div className="text-xl mt-1 text-blue-50">Key Milestones</div>
 
                     <div className="mt-3 space-y-3">
@@ -235,9 +300,11 @@ export default function ArtemisLandingPage() {
             <div className="rounded-[2rem] border border-cyan-300/25 bg-gradient-to-br from-blue-500/15 via-sky-400/10 to-cyan-300/15 p-6 md:p-8 shadow-[0_0_60px_rgba(56,189,248,0.12)]">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <div className="text-sm uppercase tracking-[0.35em] text-cyan-200/55">Mission call to action</div>
+                  <div className="text-sm uppercase tracking-[0.35em] text-cyan-200/55">
+                    Live crypto presale
+                  </div>
                   <h2 id="buy-heading" className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50">
-                    Join the crew before the hatch seals.
+                    Buy Artemis in the live $ARTM3 presale.
                   </h2>
                 </div>
                 <div className="rounded-full border border-cyan-300/20 bg-black/25 px-4 py-2 text-sm text-cyan-100/80">
@@ -245,26 +312,79 @@ export default function ArtemisLandingPage() {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-4 mt-8">
-                {ctaCards.map((card) => {
-                  const Icon = card.icon;
-                  return (
-                    <div
-                      key={card.title}
-                      className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5 flex flex-col h-full"
-                    >
-                      <div className="w-11 h-11 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 flex items-center justify-center mb-4">
-                        <Icon className="w-5 h-5 text-cyan-200" />
-                      </div>
-                      <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">{card.eyebrow}</div>
-                      <h3 className="text-xl font-semibold text-blue-50 mt-2">{card.title}</h3>
-                      <div className="text-blue-100/65 mt-3 leading-7 text-sm">{card.text}</div>
-                      <ButtonLink href="/presale" className="w-full mt-auto rounded-2xl h-12">
-                        {card.button}
-                      </ButtonLink>
-                    </div>
-                  );
-                })}
+              <p className="mt-6 text-blue-100/70 leading-8 max-w-3xl">
+                Artemis is an Ethereum memecoin built around the Artemis III Moon mission. The
+                project combines a fixed 10,000,000 token supply, staged presale pricing and a
+                planned exchange launch strategy designed to build momentum into one of the biggest
+                global space narratives in the world.
+              </p>
+
+              <div className="grid sm:grid-cols-2 gap-4 mt-8">
+                <div className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5">
+                  <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">
+                    Network
+                  </div>
+                  <h3 className="text-xl font-semibold text-blue-50 mt-2">Built on Ethereum</h3>
+                  <div className="text-blue-100/65 mt-3 leading-7 text-sm">
+                    Artemis uses the Ethereum network for a familiar, trusted and widely supported
+                    crypto buying experience.
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5">
+                  <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">
+                    Payments
+                  </div>
+                  <h3 className="text-xl font-semibold text-blue-50 mt-2">
+                    Buy with ETH, USDT or USDC
+                  </h3>
+                  <div className="text-blue-100/65 mt-3 leading-7 text-sm">
+                    The live presale accepts major crypto payment options, giving buyers a simple
+                    route to secure $ARTM3.
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5">
+                  <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">
+                    Supply
+                  </div>
+                  <h3 className="text-xl font-semibold text-blue-50 mt-2">
+                    Fixed 10,000,000 token supply
+                  </h3>
+                  <div className="text-blue-100/65 mt-3 leading-7 text-sm">
+                    $ARTM3 has a fixed supply with no inflation, designed around scarcity and
+                    narrative-led demand.
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-cyan-300/20 bg-black/30 p-5">
+                  <div className="text-xs uppercase tracking-[0.25em] text-cyan-200/45">
+                    Pricing
+                  </div>
+                  <h3 className="text-xl font-semibold text-blue-50 mt-2">
+                    Presale pricing from $0.25 to $0.90
+                  </h3>
+                  <div className="text-blue-100/65 mt-3 leading-7 text-sm">
+                    The structured presale rewards early participation, with staged batch pricing
+                    leading into the targeted $1.00 launch price.
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 mt-6">
+                <ButtonLink href="#pricing" variant="ghost" className="rounded-2xl h-11 px-5 text-sm">
+                  See Presale Batches
+                </ButtonLink>
+                <ButtonLink
+                  href="#tokenomics"
+                  variant="ghost"
+                  className="rounded-2xl h-11 px-5 text-sm"
+                >
+                  View Supply Structure
+                </ButtonLink>
+                <ButtonLink href="#roadmap" variant="ghost" className="rounded-2xl h-11 px-5 text-sm">
+                  Read Roadmap
+                </ButtonLink>
               </div>
             </div>
 
@@ -272,14 +392,17 @@ export default function ArtemisLandingPage() {
               <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Buy module</div>
               <h2 className="text-3xl font-semibold mt-2 text-blue-50">Launch-ready purchase panel</h2>
               <div className="text-blue-100/65 mt-3 leading-7">
-                Launch interface. Connect, fuel up, and secure your allocation before final boarding closes.
+                Connect your wallet, choose your allocation and buy $ARTM3 before final boarding
+                closes.
               </div>
 
               <div className="mt-6 rounded-3xl border border-blue-400/20 bg-blue-500/5 p-5">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Crew access</div>
-                    <h3 className="text-xl font-semibold text-blue-50 mt-2">Buy $ARTM now</h3>
+                    <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                      Crew access
+                    </div>
+                    <h3 className="text-xl font-semibold text-blue-50 mt-2">Buy $ARTM3 now</h3>
                   </div>
                   <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-200">
                     Wallet supported
@@ -289,14 +412,18 @@ export default function ArtemisLandingPage() {
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 flex items-center justify-between">
                     <div>
-                      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Payment</div>
+                      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                        Payment
+                      </div>
                       <div className="text-blue-50 font-medium mt-1">ETH / USDT / USDC</div>
                     </div>
                     <Wallet className="w-5 h-5 text-blue-200" />
                   </div>
                   <div className="rounded-2xl border border-blue-400/20 bg-black/30 px-4 py-4 flex items-center justify-between">
                     <div>
-                      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Allocation status</div>
+                      <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                        Allocation status
+                      </div>
                       <div className="text-blue-50 font-medium mt-1">Presale open</div>
                     </div>
                     <Zap className="w-5 h-5 text-cyan-200" />
@@ -307,18 +434,20 @@ export default function ArtemisLandingPage() {
                   href="/presale"
                   className="w-full mt-5 rounded-2xl h-14 text-base font-semibold shadow-[0_0_30px_rgba(59,130,246,0.35)]"
                 >
-                  Buy $ARTM Now
+                  Buy $ARTM3 Now
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </ButtonLink>
 
                 <div className="grid grid-cols-3 gap-3 mt-4 text-center">
                   {[
                     ['Presale', 'Open'],
-                    ['Min. Buy', '$250'],
+                    ['Min. Buy', '$25'],
                     ['Accepted', 'Crypto'],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-blue-400/20 bg-black/25 px-3 py-3">
-                      <div className="text-[10px] uppercase tracking-[0.25em] text-blue-200/45">{label}</div>
+                      <div className="text-[10px] uppercase tracking-[0.25em] text-blue-200/45">
+                        {label}
+                      </div>
                       <div className="text-sm font-semibold text-blue-50 mt-2">{value}</div>
                     </div>
                   ))}
@@ -332,23 +461,38 @@ export default function ArtemisLandingPage() {
             aria-labelledby="mission-alignment-heading"
             className="rounded-[2rem] border border-blue-400/20 bg-gradient-to-r from-blue-500/10 via-blue-400/5 to-sky-300/10 p-6 md:p-8"
           >
-            <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Mission Alignment</div>
-            <h2 id="mission-alignment-heading" className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50">
+            <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">
+              Mission Alignment
+            </div>
+            <h2
+              id="mission-alignment-heading"
+              className="text-3xl md:text-4xl font-semibold mt-2 text-blue-50"
+            >
               Artemis launches into the biggest Moon narrative on Earth.
             </h2>
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
-                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Global event</div>
-                <h3 className="text-2xl font-semibold text-blue-50 mt-2">Artemis III lunar mission</h3>
+                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                  Global event
+                </div>
+                <h3 className="text-2xl font-semibold text-blue-50 mt-2">
+                  Artemis III lunar mission
+                </h3>
                 <div className="text-blue-100/65 mt-2 leading-7">
-                  NASA’s return-to-the-Moon mission gives the project a real-world attention anchor for its biggest public moment.
+                  NASA’s return-to-the-Moon mission gives the project a real-world attention anchor
+                  for its biggest public moment.
                 </div>
               </div>
               <div className="rounded-3xl border border-blue-400/20 bg-black/30 p-5">
-                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">Launch strategy</div>
-                <h3 className="text-2xl font-semibold text-blue-50 mt-2">Tier 1 exchange ambition</h3>
+                <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                  Launch strategy
+                </div>
+                <h3 className="text-2xl font-semibold text-blue-50 mt-2">
+                  Tier 1 exchange ambition
+                </h3>
                 <div className="text-blue-100/65 mt-2 leading-7">
-                  Presale closes on 31 March 2027, with launch momentum designed to build into Artemis III and maximise visibility.
+                  Presale closes on 31 March 2027, with launch momentum designed to build into
+                  Artemis III and maximise visibility.
                 </div>
               </div>
             </div>
@@ -360,7 +504,9 @@ export default function ArtemisLandingPage() {
                 ['Exchange Goal', 'Tier 1 listing'],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-3xl border border-blue-400/20 bg-blue-500/5 p-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">{label}</div>
+                  <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                    {label}
+                  </div>
                   <div className="text-xl font-semibold text-blue-50 mt-2">{value}</div>
                 </div>
               ))}
@@ -399,7 +545,8 @@ export default function ArtemisLandingPage() {
               <h3 className="text-xl font-semibold text-blue-50">Raise Target</h3>
               <div className="text-4xl font-bold mt-2 text-cyan-300">~$3,125,000</div>
               <div className="text-blue-100/60 mt-3">
-                Structured to build momentum ahead of a major exchange launch aligned with Artemis III.
+                Structured to build momentum ahead of a major exchange launch aligned with Artemis
+                III.
               </div>
             </div>
 
@@ -416,7 +563,9 @@ export default function ArtemisLandingPage() {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <h3 className="text-xl font-semibold text-blue-50">Presale Batches</h3>
-                <div className="text-blue-100/60 mt-1 text-sm">Structured supply by tranche to reward early boarding.</div>
+                <div className="text-blue-100/60 mt-1 text-sm">
+                  Structured supply by tranche to reward early boarding.
+                </div>
               </div>
               <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs uppercase tracking-[0.25em] text-cyan-200">
                 Batch pricing live
@@ -428,7 +577,7 @@ export default function ArtemisLandingPage() {
                 {
                   label: 'Batch 1',
                   price: '$0.25',
-                  supply: '500k ARTM',
+                  supply: '500k ARTM3',
                   remaining: '90% remaining',
                   progress: 10,
                   badge: 'Current Batch',
@@ -438,7 +587,7 @@ export default function ArtemisLandingPage() {
                 {
                   label: 'Batch 2',
                   price: '$0.40',
-                  supply: '750k ARTM',
+                  supply: '750k ARTM3',
                   remaining: '+60% from Batch 1',
                   progress: 0,
                   badge: 'Next Up',
@@ -448,7 +597,7 @@ export default function ArtemisLandingPage() {
                 {
                   label: 'Batch 3',
                   price: '$0.55',
-                  supply: '1M ARTM',
+                  supply: '1M ARTM3',
                   remaining: 'Mid-mission pricing',
                   progress: 0,
                   badge: '',
@@ -458,7 +607,7 @@ export default function ArtemisLandingPage() {
                 {
                   label: 'Batch 4',
                   price: '$0.70',
-                  supply: '1M ARTM',
+                  supply: '1M ARTM3',
                   remaining: 'Momentum phase',
                   progress: 0,
                   badge: '',
@@ -468,7 +617,7 @@ export default function ArtemisLandingPage() {
                 {
                   label: 'Batch 5',
                   price: '$0.80',
-                  supply: '1.25M ARTM',
+                  supply: '1.25M ARTM3',
                   remaining: 'Pre-launch pricing',
                   progress: 0,
                   badge: '',
@@ -478,7 +627,7 @@ export default function ArtemisLandingPage() {
                 {
                   label: 'Final Boarding',
                   price: '$0.90',
-                  supply: '500k ARTM',
+                  supply: '500k ARTM3',
                   remaining: 'Last allocation before launch',
                   progress: 0,
                   badge: '',
@@ -497,7 +646,9 @@ export default function ArtemisLandingPage() {
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">{batch.label}</div>
+                        <div className="text-xs uppercase tracking-[0.25em] text-blue-200/45">
+                          {batch.label}
+                        </div>
                         {batch.badge ? (
                           <div className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">
                             {batch.badge}
@@ -505,12 +656,18 @@ export default function ArtemisLandingPage() {
                         ) : null}
                       </div>
                       <div className="text-blue-50 font-semibold mt-1 text-lg">{batch.price}</div>
-                      <div className="text-xs uppercase tracking-[0.2em] text-blue-100/45 mt-1">{batch.kicker}</div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-blue-100/45 mt-1">
+                        {batch.kicker}
+                      </div>
                     </div>
 
                     <div className="text-right">
                       <div className="text-sm text-blue-100/75">{batch.supply}</div>
-                      <div className={`text-xs uppercase tracking-[0.2em] mt-1 ${batch.highlight ? 'text-cyan-200' : 'text-blue-200/55'}`}>
+                      <div
+                        className={`text-xs uppercase tracking-[0.2em] mt-1 ${
+                          batch.highlight ? 'text-cyan-200' : 'text-blue-200/55'
+                        }`}
+                      >
                         {batch.remaining}
                       </div>
                     </div>
@@ -521,7 +678,10 @@ export default function ArtemisLandingPage() {
                       <span>Allocation status</span>
                       <span>{batch.progress}%</span>
                     </div>
-                    <Progress value={batch.progress} className={batch.highlight ? 'bg-cyan-950/40' : 'bg-blue-900/40'} />
+                    <Progress
+                      value={batch.progress}
+                      className={batch.highlight ? 'bg-cyan-950/40' : 'bg-blue-900/40'}
+                    />
                   </div>
                 </div>
               ))}
@@ -533,7 +693,8 @@ export default function ArtemisLandingPage() {
               <div className="text-blue-200/45 text-xs uppercase">Entry Advantage</div>
               <h3 className="text-blue-50 font-semibold mt-2">Pre-launch position</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
-                Secure tokens before a potential Tier 1 exchange listing aligned with a major global narrative.
+                Secure tokens before a potential Tier 1 exchange listing aligned with a major global
+                narrative.
               </div>
             </div>
 
@@ -549,7 +710,8 @@ export default function ArtemisLandingPage() {
               <div className="text-blue-200/45 text-xs uppercase">Market Behaviour</div>
               <h3 className="text-blue-50 font-semibold mt-2">Price discovery potential</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
-                Major exchange launches often create sharp repricing and significant early volatility.
+                Major exchange launches often create sharp repricing and significant early
+                volatility.
               </div>
             </div>
           </div>
@@ -557,7 +719,10 @@ export default function ArtemisLandingPage() {
 
         <section id="tokenomics" aria-labelledby="tokenomics-heading" className="py-12">
           <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">Tokenomics</div>
-          <h2 id="tokenomics-heading" className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">
+          <h2
+            id="tokenomics-heading"
+            className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50"
+          >
             Mission supply structure
           </h2>
 
@@ -596,9 +761,10 @@ export default function ArtemisLandingPage() {
           <div className="grid md:grid-cols-2 gap-6 mt-8">
             <div className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6">
               <h3 className="text-xl font-semibold text-blue-50">Total Supply</h3>
-              <div className="text-4xl font-bold mt-2 text-cyan-300">10,000,000 ARTM</div>
+              <div className="text-4xl font-bold mt-2 text-cyan-300">10,000,000 ARTM3</div>
               <div className="text-blue-100/60 mt-3">
-                Fixed supply with no inflation, designed around scarcity and narrative-driven demand.
+                Fixed supply with no inflation, designed around scarcity and narrative-driven
+                demand.
               </div>
             </div>
 
@@ -626,7 +792,8 @@ export default function ArtemisLandingPage() {
               <div className="text-blue-200/45 text-xs uppercase">Liquidity</div>
               <h3 className="text-blue-50 font-semibold mt-2">Locked</h3>
               <div className="text-blue-100/60 mt-2 text-sm">
-                100% of liquidity is locked at launch to ensure trust and stability during the initial trading phase.
+                100% of liquidity is locked at launch to ensure trust and stability during the
+                initial trading phase.
               </div>
             </div>
 
@@ -645,6 +812,32 @@ export default function ArtemisLandingPage() {
                 Strategic reserve used for listings, partnerships and long-term mission execution.
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="faq" aria-labelledby="faq-heading" className="py-12">
+          <div className="text-sm uppercase tracking-[0.35em] text-blue-200/45">
+            Frequently Asked Questions
+          </div>
+          <h2 id="faq-heading" className="text-3xl md:text-5xl font-semibold mt-2 text-blue-50">
+            Everything you need to know before buying $ARTM3.
+          </h2>
+          <div className="text-blue-100/65 mt-4 max-w-3xl leading-8">
+            Artemis is designed to be simple to understand: a fixed-supply Ethereum memecoin, a
+            live crypto presale, and a launch strategy built around one of the most recognisable
+            Moon missions in the world.
+          </div>
+
+          <div className="mt-8 space-y-4">
+            {faqItems.map((item) => (
+              <div
+                key={item.question}
+                className="rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6"
+              >
+                <h3 className="text-xl font-semibold text-blue-50">{item.question}</h3>
+                <p className="text-blue-100/65 mt-3 leading-8">{item.answer}</p>
+              </div>
+            ))}
           </div>
         </section>
       </div>

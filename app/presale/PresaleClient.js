@@ -467,7 +467,7 @@ export default function ArtemisPresalePage() {
         >
           <div className="mx-auto max-w-2xl text-center">
             <h1 id="presale-heading" className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
-              Secure your $ARTM allocation
+              Secure your $ARTM3 allocation
             </h1>
             <div className="mt-4 text-xl font-medium text-cyan-300 md:text-2xl">
               Batch 1 — $0.25
@@ -476,7 +476,7 @@ export default function ArtemisPresalePage() {
               Price increases as batches fill
             </p>
             <p className="mt-4 text-sm text-blue-100/65 md:text-base">
-              Connect your wallet to participate in the Artemis presale using ETH, USDC, or USDT on Ethereum mainnet.
+              Buy $ARTM3 in the Artemis presale using ETH, USDC, or USDT on the Ethereum network.
             </p>
           </div>
 
@@ -606,7 +606,7 @@ export default function ArtemisPresalePage() {
                       You receive
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <div className="text-3xl font-semibold text-white">{estimatedTokens} ARTM</div>
+                      <div className="text-3xl font-semibold text-white">{estimatedTokens} ARTM3</div>
                       <div className="text-sm text-blue-100/55">at $0.25</div>
                     </div>
                     <div className="mt-2 text-sm text-blue-100/55">
@@ -696,7 +696,7 @@ export default function ArtemisPresalePage() {
                         Confirming transaction...
                       </>
                     ) : (
-                      'Buy $ARTM'
+                      'Buy $ARTM3'
                     )}
                   </Button>
 
@@ -730,6 +730,10 @@ export default function ArtemisPresalePage() {
             <h2 id="presale-trust-heading" className="sr-only">
               Presale trust indicators
             </h2>
+
+            <div className="mb-4 text-center text-sm text-blue-100/55">
+              Built on Ethereum. Fixed supply. Buy using ETH, USDC or USDT.
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-center">
