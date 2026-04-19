@@ -1,9 +1,20 @@
 import { ethers, run } from "hardhat";
+import { DEPLOYMENT_PARAMS } from "./params";
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.trim() === "") {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value.trim();
+}
+
+async function maybeVerify(address: string, args: readonly unknown[]) {
   if (process.env.ETHERSCAN_API_KEY) {
     try {
       await run("verify:verify", {
         address,
-        constructorArguments: args
+        constructorArguments: args,
       });
     } catch (error) {
       console.warn("Verification skipped or failed:", error);
@@ -35,7 +46,7 @@ async function main() {
     DEPLOYMENT_PARAMS.presale.presaleTokenCap,
     DEPLOYMENT_PARAMS.presale.minimumPurchaseUsd,
     DEPLOYMENT_PARAMS.presale.batchCaps,
-    DEPLOYMENT_PARAMS.presale.batchPricesUsd
+    DEPLOYMENT_PARAMS.presale.batchPricesUsd,
   ] as const;
 
   const Presale = await ethers.getContractFactory("ArtemisPresale");
